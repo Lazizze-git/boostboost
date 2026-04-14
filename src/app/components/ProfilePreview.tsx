@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import { Instagram, Linkedin, Music, Mail, MessageCircle, Globe, Wifi, ArrowRight, Share2, Pencil } from 'lucide-react'
+import { supabase } from '../../lib/supabase'
 
 type Mode = 'Soirée' | 'Pro' | 'Sport' | 'Discret'
 
@@ -17,24 +18,7 @@ const MODES: Record<Mode, ModeConfig> = {
   'Discret': { emoji: '🔒', color: '#6A4AB8', bio: 'Contact minimal' },
 }
 
-interface Platform {
-  id: string
-  name: string
-  icon: LucideIcon
-  color: string
-  handle: string
-  modes: Mode[]
-}
 
-const PLATFORMS: Platform[] = [
-  { id: 'instagram', name: 'Instagram', icon: Instagram,      color: '#E1306C', handle: '@julien.moreau',       modes: ['Soirée'] },
-  { id: 'snapchat',  name: 'Snapchat',  icon: MessageCircle,  color: '#FFAA00', handle: 'julienm',              modes: ['Soirée'] },
-  { id: 'spotify',   name: 'Spotify',   icon: Music,          color: '#1DB954', handle: 'Julien M',             modes: ['Soirée', 'Sport'] },
-  { id: 'linkedin',  name: 'LinkedIn',  icon: Linkedin,       color: '#0077B5', handle: 'julien-moreau',        modes: ['Pro'] },
-  { id: 'portfolio', name: 'Portfolio', icon: Globe,          color: '#6A4AB8', handle: 'julienmoreau.dev',     modes: ['Pro'] },
-  { id: 'email',     name: 'Email',     icon: Mail,           color: '#3A6DBF', handle: 'j.moreau@gmail.com',   modes: ['Pro', 'Sport', 'Discret'] },
-  { id: 'whatsapp',  name: 'WhatsApp',  icon: MessageCircle,  color: '#25D366', handle: '+33 6 12 34 56 78',    modes: ['Sport'] },
-]
 
 import type { SupabaseProfile } from '../App'
 
@@ -44,18 +28,55 @@ interface ProfilePreviewProps {
   onReconfigure?: () => void
 }
 
+const ICON_MAP: Record<string, LucideIcon> = {
+  instagram: Instagram,
+  linkedin:  Linkedin,
+  spotify:   Music,
+  email:     Mail,
+  snapchat:  MessageCircle,
+  whatsapp:  MessageCircle,
+  portfolio: Globe,
+}
+
+const COLOR_MAP: Record<string, string> = {
+  instagram: '#E1306C',
+  linkedin:  '#0077B5',
+  spotify:   '#1DB954',
+  email:     '#3A6DBF',
+  snapchat:  '#FFAA00',
+  whatsapp:  '#25D366',
+  portfolio: '#6A4AB8',
+}
+
+interface SavedLink {
+  id: string
+  title: string
+  url: string
+  icon: string
+  order: number
+}
+
 export function ProfilePreview({ profile, onEdit, onReconfigure }: ProfilePreviewProps) {
   const [activeMode, setActiveMode]               = useState<Mode>('Soirée')
   const [isBraceletConfigured, setIsBraceletConfigured] = useState(false)
+  const [savedLinks, setSavedLinks]               = useState<SavedLink[]>([])
 
   useEffect(() => {
     const configured = localStorage.getItem('tap-bracelet-configured') === 'true'
     setIsBraceletConfigured(configured)
   }, [])
 
-  const modeKeys    = Object.keys(MODES) as Mode[]
-  const config      = MODES[activeMode]
-  const activePlatforms = PLATFORMS.filter(p => p.modes.includes(activeMode))
+  useEffect(() => {
+    supabase
+      .from('links')
+      .select('*')
+      .eq('profile_id', profile.id)
+      .order('order')
+      .then(({ data }) => setSavedLinks(data ?? []))
+  }, [profile.id])
+
+  const modeKeys = Object.keys(MODES) as Mode[]
+  const config   = MODES[activeMode]
 
   return (
     <div className="min-h-screen bg-tap-bg relative overflow-hidden">
@@ -142,7 +163,7 @@ export function ProfilePreview({ profile, onEdit, onReconfigure }: ProfilePrevie
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={onEdit}
-                className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-tap-text-1 text-white text-sm font-semibold transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
+                className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-tap-text-1 text-black text-sm font-semibold transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
               >
                 <Pencil size={13} />
                 Modifier
@@ -174,7 +195,7 @@ export function ProfilePreview({ profile, onEdit, onReconfigure }: ProfilePrevie
           {!isBraceletConfigured && onReconfigure ? (
             <button
               onClick={onReconfigure}
-              className="px-4 py-2 rounded-xl bg-tap-text-1 text-white text-xs font-semibold transition-all active:scale-95"
+              className="px-4 py-2 rounded-xl bg-tap-text-1 text-black text-xs font-semibold transition-all active:scale-95"
             >
               Configurer
             </button>
@@ -186,26 +207,30 @@ export function ProfilePreview({ profile, onEdit, onReconfigure }: ProfilePrevie
         {/* ─── Social links ─── */}
         <div className="animate-fade-up [animation-delay:200ms] space-y-3">
           <p className="text-xs font-medium text-tap-text-3 uppercase tracking-widest">
-            Liens actifs · {activePlatforms.length}
+            Liens actifs · {savedLinks.length}
           </p>
 
           <div className="space-y-2">
-            {activePlatforms.map((platform) => {
-              const Icon = platform.icon
+            {savedLinks.length === 0 && (
+              <p className="text-sm text-tap-text-3 text-center py-4">Aucun lien configuré</p>
+            )}
+            {savedLinks.map((link) => {
+              const Icon = ICON_MAP[link.icon] ?? Globe
+              const color = COLOR_MAP[link.icon] ?? '#FFFFFF'
               return (
                 <div
-                  key={platform.id}
+                  key={link.id}
                   className="bg-tap-surface rounded-2xl border border-tap-border p-4 flex items-center gap-3 transition-all duration-200 hover:-translate-y-0.5"
                 >
                   <div
                     className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                    style={{ backgroundColor: `${platform.color}15` }}
+                    style={{ backgroundColor: `${color}15` }}
                   >
-                    <Icon size={17} style={{ color: platform.color }} />
+                    <Icon size={17} style={{ color }} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-tap-text-1">{platform.name}</p>
-                    <p className="text-xs text-tap-text-3 truncate">{platform.handle}</p>
+                    <p className="text-sm font-medium text-tap-text-1">{link.title}</p>
+                    <p className="text-xs text-tap-text-3 truncate">{link.url}</p>
                   </div>
                   <ArrowRight size={14} className="text-tap-text-3 flex-shrink-0" />
                 </div>
