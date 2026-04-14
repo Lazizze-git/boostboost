@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import {
   ChevronLeft, Plus, X, Instagram, Linkedin, Music, Mail,
@@ -111,6 +111,30 @@ export function ProfileEditor({ onBack, profile: supabaseProfile }: ProfileEdito
   const [userName, setUserName]     = useState(supabaseProfile.display_name)
   const [profiles, setProfiles]     = useState<Record<Mode, ModeProfile>>(DEFAULT_PROFILES)
   const [saving, setSaving]         = useState(false)
+
+  useEffect(() => {
+    const loadLinks = async () => {
+      const { data } = await supabase
+        .from('links')
+        .select('*')
+        .eq('profile_id', supabaseProfile.id)
+        .order('order')
+
+      if (!data || data.length === 0) return
+
+      setProfiles(prev => ({
+        ...prev,
+        [activeMode]: {
+          ...prev[activeMode],
+          links: prev[activeMode].links.map(link => {
+            const saved = data.find(d => d.icon === link.id)
+            return saved ? { ...link, handle: saved.url, enabled: true } : { ...link, enabled: false }
+          }),
+        },
+      }))
+    }
+    loadLinks()
+  }, [supabaseProfile.id])
 
   const handleSave = async () => {
     setSaving(true)
@@ -367,13 +391,13 @@ export function ProfileEditor({ onBack, profile: supabaseProfile }: ProfileEdito
                     <Icon size={17} style={{ color: link.color }} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-tap-text-1 mb-0.5">{link.name}</p>
+                    <p className="text-sm font-medium text-tap-text-1 mb-1">{link.name}</p>
                     <input
                       type="text"
                       value={link.handle}
                       onChange={(e) => updateLinkHandle(link.id, e.target.value)}
                       placeholder="Ton identifiant..."
-                      className="w-full bg-transparent text-xs text-tap-text-3 outline-none placeholder:text-tap-text-3"
+                      className="w-full bg-tap-bg border border-tap-border rounded-lg px-2 py-1.5 text-xs text-tap-text-2 outline-none focus:border-tap-text-2 transition-colors placeholder:text-tap-text-3"
                     />
                   </div>
                   <Switch
