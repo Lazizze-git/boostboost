@@ -55,12 +55,6 @@ function App() {
     setProfile(data)
   }
 
-  useEffect(() => {
-    if (!session || !profile) return
-    const configured = localStorage.getItem('tap-bracelet-configured') === 'true'
-    if (!configured) setCurrentView('setup')
-  }, [session, profile])
-
   const handleReconfigure = () => {
     localStorage.removeItem('tap-bracelet-configured')
     localStorage.removeItem('tap-bracelet-url')
