@@ -1,381 +1,223 @@
-import { Instagram, Linkedin, Music, Phone, Mail, MessageCircle, Globe, Wifi, Sparkles, ArrowRight, Share2 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react'
+import type { LucideIcon } from 'lucide-react'
+import { Instagram, Linkedin, Music, Mail, MessageCircle, Globe, Wifi, ArrowRight, Share2, Pencil } from 'lucide-react'
 
-interface ProfilePreviewProps {
-  onEdit: () => void;
-  onPreview?: () => void;
-  onReconfigure?: () => void;
+type Mode = 'Soirée' | 'Pro' | 'Sport' | 'Discret'
+
+interface ModeConfig {
+  emoji: string
+  color: string
+  bio: string
 }
 
-export function ProfilePreview({ onEdit, onPreview, onReconfigure }: ProfilePreviewProps) {
-  const [activeMode, setActiveMode] = useState('Soirée');
-  const [isBraceletConfigured, setIsBraceletConfigured] = useState(false);
+const MODES: Record<Mode, ModeConfig> = {
+  'Soirée':  { emoji: '🎉', color: '#C8506A', bio: 'DJ le weekend, dev la semaine 🎧' },
+  'Pro':     { emoji: '💼', color: '#3A6DBF', bio: 'Full-stack developer · React & Node.js' },
+  'Sport':   { emoji: '⚡', color: '#2A8A5A', bio: 'Runner · Cycliste · Outdoor enthusiast' },
+  'Discret': { emoji: '🔒', color: '#6A4AB8', bio: 'Contact minimal' },
+}
+
+interface Platform {
+  id: string
+  name: string
+  icon: LucideIcon
+  color: string
+  handle: string
+  modes: Mode[]
+}
+
+const PLATFORMS: Platform[] = [
+  { id: 'instagram', name: 'Instagram', icon: Instagram,      color: '#E1306C', handle: '@julien.moreau',       modes: ['Soirée'] },
+  { id: 'snapchat',  name: 'Snapchat',  icon: MessageCircle,  color: '#FFAA00', handle: 'julienm',              modes: ['Soirée'] },
+  { id: 'spotify',   name: 'Spotify',   icon: Music,          color: '#1DB954', handle: 'Julien M',             modes: ['Soirée', 'Sport'] },
+  { id: 'linkedin',  name: 'LinkedIn',  icon: Linkedin,       color: '#0077B5', handle: 'julien-moreau',        modes: ['Pro'] },
+  { id: 'portfolio', name: 'Portfolio', icon: Globe,          color: '#6A4AB8', handle: 'julienmoreau.dev',     modes: ['Pro'] },
+  { id: 'email',     name: 'Email',     icon: Mail,           color: '#3A6DBF', handle: 'j.moreau@gmail.com',   modes: ['Pro', 'Sport', 'Discret'] },
+  { id: 'whatsapp',  name: 'WhatsApp',  icon: MessageCircle,  color: '#25D366', handle: '+33 6 12 34 56 78',    modes: ['Sport'] },
+]
+
+interface ProfilePreviewProps {
+  onEdit: () => void
+  onReconfigure?: () => void
+}
+
+export function ProfilePreview({ onEdit, onReconfigure }: ProfilePreviewProps) {
+  const [activeMode, setActiveMode]               = useState<Mode>('Soirée')
+  const [isBraceletConfigured, setIsBraceletConfigured] = useState(false)
 
   useEffect(() => {
-    const configured = localStorage.getItem('tap-bracelet-configured') === 'true';
-    setIsBraceletConfigured(configured);
-  }, []);
+    const configured = localStorage.getItem('tap-bracelet-configured') === 'true'
+    setIsBraceletConfigured(configured)
+  }, [])
 
-  const modes = [
-    { name: 'Soirée', color: '#C8506A', emoji: '🎉', gradient: 'linear-gradient(135deg, #C8506A 0%, #E1306C 100%)' },
-    { name: 'Pro', color: '#4A7DD4', emoji: '💼', gradient: 'linear-gradient(135deg, #4A7DD4 0%, #0077B5 100%)' },
-    { name: 'Sport', color: '#3A9A6A', emoji: '⚡', gradient: 'linear-gradient(135deg, #3A9A6A 0%, #1DB954 100%)' },
-    { name: 'Discret', color: '#7A5AC8', emoji: '🔒', gradient: 'linear-gradient(135deg, #7A5AC8 0%, #9B59B6 100%)' }
-  ];
-
-  const currentMode = modes.find(m => m.name === activeMode) || modes[0];
-
-  const platforms = [
-    { name: 'Instagram', icon: Instagram, color: '#E1306C', handle: '@julien.moreau', active: activeMode === 'Soirée' },
-    { name: 'LinkedIn', icon: Linkedin, color: '#0077B5', handle: 'julien-moreau', active: activeMode === 'Pro' },
-    { name: 'Spotify', icon: Music, color: '#1DB954', handle: 'Julien M', active: activeMode === 'Soirée' },
-    { name: 'Email', icon: Mail, color: '#4A7DD4', handle: 'j.moreau@gmail.com', active: true },
-  ];
+  const modeKeys    = Object.keys(MODES) as Mode[]
+  const config      = MODES[activeMode]
+  const activePlatforms = PLATFORMS.filter(p => p.modes.includes(activeMode))
 
   return (
-    <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: 'var(--tap-bg-primary)' }}>
-      {/* Decorative Background Elements */}
-      <div className="absolute top-0 right-0 w-64 h-64 rounded-full opacity-20 blur-3xl animate-float" 
-           style={{ background: currentMode.gradient }}></div>
-      <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full opacity-10 blur-3xl" 
-           style={{ background: currentMode.gradient, animationDelay: '1.5s' }}></div>
+    <div className="min-h-screen bg-tap-bg relative overflow-hidden">
 
-      <div className="relative z-10 p-6 animate-slide-up">
-        {/* Header with greeting */}
-        <div className="mb-8">
-          <div className="flex items-center gap-2 mb-2">
-            <Sparkles size={20} style={{ color: 'var(--tap-accent)' }} />
-            <span style={{ fontSize: '14px', color: 'var(--tap-text-tertiary)', fontWeight: '400' }}>
-              Salut Julien 👋
-            </span>
-          </div>
-          <h1 style={{ 
-            fontSize: '32px', 
-            fontWeight: '300', 
-            color: 'var(--tap-text-primary)',
-            letterSpacing: '-0.03em',
-            marginBottom: '8px'
-          }}>
-            Ton profil TAP
-          </h1>
-          <p style={{ fontSize: '15px', color: 'var(--tap-text-secondary)' }}>
-            Prêt à partager ton monde
+      {/* ─── Unexpected element: oversized mode watermark ─── */}
+      <div
+        className="absolute bottom-0 left-0 right-0 overflow-hidden pointer-events-none select-none"
+        aria-hidden
+      >
+        <p className="text-[32vw] font-black uppercase leading-none text-black/[0.035] -ml-1 transition-all duration-500">
+          {activeMode}
+        </p>
+      </div>
+
+      <div className="relative z-10 px-5 pt-14 pb-28 space-y-7">
+
+        {/* ─── Header ─── */}
+        <header className="animate-fade-up">
+          <p className="text-xs font-medium text-tap-text-3 uppercase tracking-widest mb-2">
+            Profil TAP
           </p>
+          <h1 className="text-[2.6rem] font-bold text-tap-text-1 leading-tight tracking-tight">
+            Salut,<br />Julien 👋
+          </h1>
+        </header>
+
+        {/* ─── Mode selector ─── */}
+        <div
+          className="flex gap-2 overflow-x-auto pb-1 -mx-5 px-5 animate-fade-up [animation-delay:80ms]"
+          style={{ scrollbarWidth: 'none' }}
+        >
+          {modeKeys.map((mode) => (
+            <button
+              key={mode}
+              onClick={() => setActiveMode(mode)}
+              className={`flex-shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-medium transition-all duration-200 active:scale-95 ${
+                activeMode === mode
+                  ? 'bg-tap-text-1 text-white'
+                  : 'bg-tap-surface text-tap-text-2 border border-tap-border hover:-translate-y-0.5'
+              }`}
+            >
+              <span>{MODES[mode].emoji}</span>
+              {mode}
+            </button>
+          ))}
         </div>
 
-        {/* Mode Selector - Modern Pills */}
-        <div className="mb-8">
-          <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1" style={{ scrollbarWidth: 'none' }}>
-            {modes.map((mode) => (
-              <button
-                key={mode.name}
-                onClick={() => setActiveMode(mode.name)}
-                className="tap-card flex-shrink-0"
-                style={{
-                  padding: '16px 20px',
-                  borderRadius: '20px',
-                  background: activeMode === mode.name 
-                    ? mode.gradient
-                    : 'var(--tap-bg-secondary)',
-                  border: activeMode === mode.name 
-                    ? 'none' 
-                    : '1px solid var(--tap-border-default)',
-                  color: activeMode === mode.name ? '#ffffff' : 'var(--tap-text-secondary)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  minWidth: 'fit-content',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-                }}
+        {/* ─── Profile card ─── */}
+        <div className="bg-tap-surface rounded-3xl border border-tap-border overflow-hidden animate-fade-up [animation-delay:120ms]">
+          {/* Accent line */}
+          <div className="h-0.5 w-full" style={{ backgroundColor: config.color }} />
+
+          <div className="p-6 space-y-5">
+            {/* Identity */}
+            <div className="flex items-start gap-4">
+              <div
+                className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0"
+                style={{ backgroundColor: `${config.color}18` }}
               >
-                <span style={{ fontSize: '20px' }}>{mode.emoji}</span>
-                <div style={{ textAlign: 'left' }}>
-                  <div style={{ 
-                    fontSize: '15px', 
-                    fontWeight: '500',
-                    marginBottom: '2px'
-                  }}>
-                    {mode.name}
-                  </div>
-                  {activeMode === mode.name && (
-                    <div style={{ 
-                      fontSize: '11px', 
-                      opacity: 0.9
-                    }}>
-                      Mode actif
-                    </div>
-                  )}
-                </div>
+                {config.emoji}
+              </div>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-xl font-bold text-tap-text-1 tracking-tight mb-1">
+                  Julien Moreau
+                </h2>
+                <p className="text-sm text-tap-text-2 leading-relaxed">
+                  {config.bio}
+                </p>
+              </div>
+            </div>
+
+            {/* Mode badge */}
+            <div className="flex items-center gap-2">
+              <span
+                className="w-1.5 h-1.5 rounded-full animate-pulse-dot"
+                style={{ backgroundColor: config.color }}
+              />
+              <span className="text-xs font-medium" style={{ color: config.color }}>
+                Mode {activeMode} actif
+              </span>
+            </div>
+
+            {/* Actions */}
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={onEdit}
+                className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-tap-text-1 text-white text-sm font-semibold transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
+              >
+                <Pencil size={13} />
+                Modifier
               </button>
-            ))}
+              <button className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-tap-bg text-tap-text-1 text-sm font-semibold border border-tap-border transition-all duration-200 hover:-translate-y-0.5 active:scale-95">
+                <Share2 size={13} />
+                Partager
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Profile Card with Glassmorphism */}
-        <div 
-          className="tap-card mb-6 relative overflow-hidden"
-          style={{
-            background: 'var(--tap-bg-secondary)',
-            borderRadius: '24px',
-            padding: '28px',
-            border: '1px solid var(--tap-border-default)'
-          }}
-        >
-          {/* Accent bar */}
-          <div 
-            className="absolute top-0 left-0 right-0 h-1"
-            style={{ background: currentMode.gradient }}
-          ></div>
-          
-          <div className="flex items-start gap-4 mb-6">
-            <div 
-              className="relative"
-              style={{
-                width: '72px',
-                height: '72px',
-                borderRadius: '20px',
-                background: currentMode.gradient,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '32px',
-                flexShrink: 0
-              }}
-            >
-              {currentMode.emoji}
-              <div 
-                className="absolute -bottom-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center"
-                style={{ 
-                  backgroundColor: 'var(--tap-success)',
-                  border: '2px solid var(--tap-bg-secondary)'
-                }}
-              >
-                <div className="w-2 h-2 rounded-full bg-white"></div>
-              </div>
+        {/* ─── Bracelet status ─── */}
+        <div className="bg-tap-surface rounded-2xl border border-tap-border p-5 flex items-center justify-between animate-fade-up [animation-delay:160ms]">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-tap-bg flex items-center justify-center">
+              <Wifi size={18} className="text-tap-text-3" />
             </div>
-            
-            <div className="flex-1">
-              <h2 style={{ 
-                fontSize: '24px', 
-                fontWeight: '500', 
-                color: 'var(--tap-text-primary)',
-                marginBottom: '4px',
-                letterSpacing: '-0.02em'
-              }}>
-                Julien Moreau
-              </h2>
-              <p style={{ 
-                fontSize: '14px', 
-                color: 'var(--tap-text-secondary)',
-                marginBottom: '12px',
-                lineHeight: '1.5'
-              }}>
-                {activeMode === 'Soirée' && 'DJ le weekend, dev la semaine 🎧'}
-                {activeMode === 'Pro' && 'Full-stack developer · React & Node.js'}
-                {activeMode === 'Sport' && 'Runner · Cycliste · Outdoor enthusiast'}
-                {activeMode === 'Discret' && 'Contact minimal'}
+            <div>
+              <p className="text-sm font-medium text-tap-text-1">
+                {isBraceletConfigured ? 'Bracelet configuré' : 'Bracelet non configuré'}
               </p>
-              
-              <div 
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full"
-                style={{
-                  backgroundColor: `${currentMode.color}15`,
-                  border: `1px solid ${currentMode.color}30`
-                }}
-              >
-                <div 
-                  className="w-2 h-2 rounded-full"
-                  style={{ 
-                    backgroundColor: currentMode.color,
-                    animation: 'pulse-glow 2s ease-in-out infinite'
-                  }}
-                ></div>
-                <span style={{ fontSize: '12px', color: currentMode.color, fontWeight: '500' }}>
-                  Mode {activeMode}
-                </span>
-              </div>
+              <p className="text-xs text-tap-text-3 mt-0.5">
+                {isBraceletConfigured ? 'Prêt à partager · 87%' : 'Synchronise ton profil'}
+              </p>
             </div>
           </div>
 
-          {/* Quick Actions */}
-          <div className="grid grid-cols-2 gap-3">
-            <button 
-              onClick={onEdit}
-              className="tap-button flex items-center justify-center gap-2 py-3 rounded-xl"
-              style={{
-                background: currentMode.gradient,
-                color: '#ffffff',
-                fontSize: '14px',
-                fontWeight: '500'
-              }}
+          {!isBraceletConfigured && onReconfigure ? (
+            <button
+              onClick={onReconfigure}
+              className="px-4 py-2 rounded-xl bg-tap-text-1 text-white text-xs font-semibold transition-all active:scale-95"
             >
-              Modifier
-              <ArrowRight size={16} />
+              Configurer
             </button>
-            <button 
-              className="tap-button flex items-center justify-center gap-2 py-3 rounded-xl"
-              style={{
-                backgroundColor: 'var(--tap-bg-primary)',
-                color: 'var(--tap-text-primary)',
-                fontSize: '14px',
-                fontWeight: '500',
-                border: '1px solid var(--tap-border-default)'
-              }}
-            >
-              Partager
-              <Share2 size={16} />
-            </button>
-          </div>
+          ) : (
+            <span className="w-2 h-2 rounded-full bg-tap-success" />
+          )}
         </div>
 
-        {/* Bracelet Status - Modern */}
-        <div 
-          className="tap-card mb-6"
-          style={{
-            background: isBraceletConfigured 
-              ? 'var(--tap-bg-secondary)' 
-              : `linear-gradient(135deg, ${currentMode.color}15 0%, ${currentMode.color}08 100%)`,
-            borderRadius: '20px',
-            padding: '20px',
-            border: isBraceletConfigured 
-              ? '1px solid var(--tap-border-default)' 
-              : `1px solid ${currentMode.color}30`
-          }}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div 
-                className="w-12 h-12 rounded-full flex items-center justify-center"
-                style={{ 
-                  background: isBraceletConfigured 
-                    ? 'var(--tap-bg-primary)' 
-                    : `${currentMode.color}20`
-                }}
-              >
-                <Wifi 
-                  size={20} 
-                  style={{ 
-                    color: isBraceletConfigured ? 'var(--tap-text-secondary)' : currentMode.color 
-                  }} 
-                />
-              </div>
-              <div>
-                <div style={{ 
-                  fontSize: '15px', 
-                  fontWeight: '500', 
-                  color: 'var(--tap-text-primary)',
-                  marginBottom: '2px'
-                }}>
-                  {isBraceletConfigured ? 'Bracelet configuré' : 'Configurer ton bracelet'}
-                </div>
-                <div style={{ fontSize: '13px', color: 'var(--tap-text-secondary)' }}>
-                  {isBraceletConfigured ? 'Prêt à partager' : 'Synchronise ton profil'}
-                </div>
-              </div>
-            </div>
-            
-            {!isBraceletConfigured && onReconfigure && (
-              <button
-                onClick={onReconfigure}
-                className="tap-button px-5 py-2 rounded-xl"
-                style={{
-                  background: currentMode.gradient,
-                  color: '#ffffff',
-                  fontSize: '13px',
-                  fontWeight: '500'
-                }}
-              >
-                Commencer
-              </button>
-            )}
-            
-            {isBraceletConfigured && (
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-4 rounded-full relative" style={{ backgroundColor: 'var(--tap-bg-primary)' }}>
-                  <div className="absolute top-0.5 right-0.5 w-6 h-3 rounded-full" 
-                       style={{ backgroundColor: 'var(--tap-success)' }}></div>
-                </div>
-                <span style={{ fontSize: '13px', color: 'var(--tap-text-tertiary)' }}>87%</span>
-              </div>
-            )}
-          </div>
-        </div>
+        {/* ─── Social links ─── */}
+        <div className="animate-fade-up [animation-delay:200ms] space-y-3">
+          <p className="text-xs font-medium text-tap-text-3 uppercase tracking-widest">
+            Liens actifs · {activePlatforms.length}
+          </p>
 
-        {/* Social Links - Compact and Modern */}
-        <div>
-          <h3 style={{ 
-            fontSize: '13px',
-            textTransform: 'uppercase',
-            color: 'var(--tap-text-tertiary)',
-            letterSpacing: '0.1em',
-            marginBottom: '16px',
-            fontWeight: '500'
-          }}>
-            Liens actifs · {platforms.filter(p => p.active).length}
-          </h3>
-          
           <div className="space-y-2">
-            {platforms.filter(p => p.active).map((platform) => {
-              const Icon = platform.icon;
+            {activePlatforms.map((platform) => {
+              const Icon = platform.icon
               return (
                 <div
-                  key={platform.name}
-                  className="tap-card flex items-center gap-3 p-4 rounded-2xl"
-                  style={{
-                    backgroundColor: 'var(--tap-bg-secondary)',
-                    border: '1px solid var(--tap-border-default)'
-                  }}
+                  key={platform.id}
+                  className="bg-tap-surface rounded-2xl border border-tap-border p-4 flex items-center gap-3 transition-all duration-200 hover:-translate-y-0.5"
                 >
                   <div
-                    className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
-                    style={{ 
-                      background: `linear-gradient(135deg, ${platform.color}20 0%, ${platform.color}10 100%)`
-                    }}
+                    className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                    style={{ backgroundColor: `${platform.color}15` }}
                   >
-                    <Icon size={20} style={{ color: platform.color }} />
+                    <Icon size={17} style={{ color: platform.color }} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div style={{ 
-                      fontSize: '14px', 
-                      color: 'var(--tap-text-primary)', 
-                      fontWeight: '500',
-                      marginBottom: '2px'
-                    }}>
-                      {platform.name}
-                    </div>
-                    <div style={{ 
-                      fontSize: '13px', 
-                      color: 'var(--tap-text-tertiary)',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap'
-                    }}>
-                      {platform.handle}
-                    </div>
+                    <p className="text-sm font-medium text-tap-text-1">{platform.name}</p>
+                    <p className="text-xs text-tap-text-3 truncate">{platform.handle}</p>
                   </div>
-                  <ArrowRight size={16} style={{ color: 'var(--tap-text-tertiary)', flexShrink: 0 }} />
+                  <ArrowRight size={14} className="text-tap-text-3 flex-shrink-0" />
                 </div>
-              );
+              )
             })}
           </div>
         </div>
 
-        {/* Footer branding */}
-        <div className="text-center mt-12 mb-8">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full" 
-               style={{ backgroundColor: 'var(--tap-bg-secondary)' }}>
-            <div className="w-5 h-5 rounded-full" style={{ background: 'var(--tap-accent)' }}></div>
-            <span style={{ 
-              fontSize: '11px', 
-              color: 'var(--tap-text-tertiary)', 
-              letterSpacing: '0.05em',
-              fontWeight: '500'
-            }}>
-              propulsé par TAP
-            </span>
-          </div>
+        {/* ─── Footer ─── */}
+        <div className="text-center pt-2">
+          <p className="text-xs font-medium text-tap-text-3/60 uppercase tracking-[0.2em]">
+            propulsé par TAP
+          </p>
         </div>
       </div>
     </div>
-  );
+  )
 }

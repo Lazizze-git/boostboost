@@ -1,53 +1,37 @@
-import { useState, useEffect } from 'react';
-import { ProfileEditor } from './components/ProfileEditor';
-import { ProfilePreview } from './components/ProfilePreview';
-import { BraceletSetup } from './components/BraceletSetup';
+import { useState, useEffect } from 'react'
+import { ProfileEditor } from './components/ProfileEditor'
+import { ProfilePreview } from './components/ProfilePreview'
+import { BraceletSetup } from './components/BraceletSetup'
+
+type View = 'setup' | 'preview' | 'editor'
 
 function App() {
-  const [currentView, setCurrentView] = useState<'setup' | 'preview' | 'editor'>('preview');
-  const [isBraceletConfigured, setIsBraceletConfigured] = useState(false);
+  const [currentView, setCurrentView] = useState<View>('preview')
 
   useEffect(() => {
-    // Check if bracelet is already configured
-    const configured = localStorage.getItem('tap-bracelet-configured') === 'true';
-    setIsBraceletConfigured(configured);
-    
-    // If not configured, show setup screen
-    if (!configured) {
-      setCurrentView('setup');
-    }
-  }, []);
+    const configured = localStorage.getItem('tap-bracelet-configured') === 'true'
+    if (!configured) setCurrentView('setup')
+  }, [])
 
-  const handleSetupComplete = () => {
-    setIsBraceletConfigured(true);
-    setCurrentView('preview');
-  };
-
-  const handleSkipSetup = () => {
-    setCurrentView('preview');
-  };
+  const handleSetupComplete = () => setCurrentView('preview')
+  const handleSkipSetup    = () => setCurrentView('preview')
 
   const handleReconfigure = () => {
-    localStorage.removeItem('tap-bracelet-configured');
-    localStorage.removeItem('tap-bracelet-url');
-    setIsBraceletConfigured(false);
-    setCurrentView('setup');
-  };
+    localStorage.removeItem('tap-bracelet-configured')
+    localStorage.removeItem('tap-bracelet-url')
+    setCurrentView('setup')
+  }
 
   return (
-    <div className="min-h-screen" style={{ 
-      backgroundColor: 'var(--tap-bg-primary)', 
-      fontFamily: 'Inter, sans-serif',
-      color: 'var(--tap-text-primary)' 
-    }}>
-      <div className="mx-auto" style={{ maxWidth: '390px' }}>
+    <div className="min-h-screen bg-tap-bg font-sans">
+      <div className="mx-auto" style={{ maxWidth: '430px' }}>
         {currentView === 'setup' ? (
-          <BraceletSetup 
-            onComplete={handleSetupComplete} 
+          <BraceletSetup
+            onComplete={handleSetupComplete}
             onSkip={handleSkipSetup}
           />
         ) : currentView === 'preview' ? (
-          <ProfilePreview 
+          <ProfilePreview
             onEdit={() => setCurrentView('editor')}
             onReconfigure={handleReconfigure}
           />
@@ -56,7 +40,7 @@ function App() {
         )}
       </div>
     </div>
-  );
+  )
 }
 
-export default App;
+export default App

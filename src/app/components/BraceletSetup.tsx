@@ -1,439 +1,274 @@
-import { useState, useEffect } from 'react';
-import { Wifi, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { useState, useEffect } from 'react'
+import { Wifi, CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
 
 interface BraceletSetupProps {
-  onComplete: () => void;
-  onSkip?: () => void;
+  onComplete: () => void
+  onSkip?: () => void
 }
 
-type SetupStep = 'intro' | 'scanning' | 'writing' | 'success' | 'error';
+type Step = 'intro' | 'scanning' | 'writing' | 'success' | 'error'
+
+function generateUserId(): string {
+  const existing = localStorage.getItem('tap-user-id')
+  if (existing) return existing
+  const id = Math.random().toString(36).substring(2, 10)
+  localStorage.setItem('tap-user-id', id)
+  return id
+}
 
 export function BraceletSetup({ onComplete, onSkip }: BraceletSetupProps) {
-  const [currentStep, setCurrentStep] = useState<SetupStep>('intro');
-  const [errorMessage, setErrorMessage] = useState('');
-  const [isNFCSupported, setIsNFCSupported] = useState(true);
+  const [step, setStep]             = useState<Step>('intro')
+  const [errorMsg, setErrorMsg]     = useState('')
+  const [nfcSupported, setNfcSupported] = useState(true)
+
+  const profileUrl = `https://tap.me/${generateUserId()}`
 
   useEffect(() => {
-    // Check if NFC is supported
-    if (!('NDEFReader' in window)) {
-      setIsNFCSupported(false);
-    }
-  }, []);
-
-  const profileUrl = `https://tap.me/${generateUserId()}`;
-
-  function generateUserId() {
-    // Generate a unique ID for this user
-    const existingId = localStorage.getItem('tap-user-id');
-    if (existingId) return existingId;
-    
-    const newId = Math.random().toString(36).substring(2, 10);
-    localStorage.setItem('tap-user-id', newId);
-    return newId;
-  }
+    if (!('NDEFReader' in window)) setNfcSupported(false)
+  }, [])
 
   const startNFCWrite = async () => {
-    if (!isNFCSupported) {
-      setErrorMessage('NFC n\'est pas supporté sur cet appareil');
-      setCurrentStep('error');
-      return;
+    if (!nfcSupported) {
+      setErrorMsg('NFC n\'est pas supporté sur cet appareil')
+      setStep('error')
+      return
     }
 
-    setCurrentStep('scanning');
+    setStep('scanning')
 
     try {
-      // @ts-ignore - NDEFReader is not in TypeScript types yet
-      const ndef = new NDEFReader();
-      
-      setCurrentStep('writing');
+      // @ts-expect-error — NDEFReader not yet in TS lib
+      const ndef = new NDEFReader()
+      setStep('writing')
+      // @ts-expect-error — NDEFReader not yet in TS lib
+      await ndef.write({ records: [{ recordType: 'url', data: profileUrl }] })
 
-      // @ts-ignore
-      await ndef.write({
-        records: [
-          {
-            recordType: "url",
-            data: profileUrl
-          }
-        ]
-      });
-
-      // Mark bracelet as configured
-      localStorage.setItem('tap-bracelet-configured', 'true');
-      localStorage.setItem('tap-bracelet-url', profileUrl);
-      
-      setCurrentStep('success');
-      
-      // Auto-complete after 2 seconds
-      setTimeout(() => {
-        onComplete();
-      }, 2000);
-
-    } catch (error: any) {
-      console.error('NFC Write Error:', error);
-      setErrorMessage(error.message || 'Erreur lors de l\'écriture NFC');
-      setCurrentStep('error');
+      localStorage.setItem('tap-bracelet-configured', 'true')
+      localStorage.setItem('tap-bracelet-url', profileUrl)
+      setStep('success')
+      setTimeout(onComplete, 2000)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erreur lors de l\'écriture NFC'
+      setErrorMsg(message)
+      setStep('error')
     }
-  };
+  }
 
-  const renderIntro = () => (
-    <div className="flex flex-col items-center text-center px-6 animate-slide-up">
-      <div 
-        className="relative mb-8 animate-float"
-      >
-        <div 
-          className="w-32 h-32 rounded-3xl flex items-center justify-center relative"
-          style={{ 
-            background: 'linear-gradient(135deg, var(--tap-accent) 0%, #E1306C 100%)',
-          }}
-        >
-          <Wifi size={48} color="#fff" />
-        </div>
-        <div 
-          className="absolute -top-2 -right-2 w-12 h-12 rounded-full flex items-center justify-center text-2xl"
-          style={{ 
-            backgroundColor: 'var(--tap-bg-secondary)',
-            border: '2px solid var(--tap-accent)'
-          }}
-        >
-          ⚡
+  return (
+    <div className="min-h-screen bg-tap-bg flex flex-col">
+      {/* Progress indicator */}
+      <div className="flex justify-center gap-2 pt-14 pb-2">
+        {(['intro', 'scanning', 'writing', 'success'] as Step[]).map((s, i) => (
+          <div
+            key={s}
+            className={`h-1 rounded-full transition-all duration-300 ${
+              s === step || (step === 'error' && i === 0)
+                ? 'w-8 bg-tap-text-1'
+                : 'w-3 bg-tap-border'
+            }`}
+          />
+        ))}
+      </div>
+
+      <div className="flex-1 flex flex-col justify-center px-6 pb-16">
+        {step === 'intro'    && <IntroStep profileUrl={profileUrl} nfcSupported={nfcSupported} onStart={startNFCWrite} onSkip={onSkip} />}
+        {step === 'scanning' && <ScanningStep />}
+        {step === 'writing'  && <WritingStep />}
+        {step === 'success'  && <SuccessStep onComplete={onComplete} />}
+        {step === 'error'    && <ErrorStep message={errorMsg} onRetry={() => setStep('intro')} onSkip={onSkip} />}
+      </div>
+    </div>
+  )
+}
+
+/* ─── Step components ─────────────────────────────── */
+
+interface IntroStepProps {
+  profileUrl: string
+  nfcSupported: boolean
+  onStart: () => void
+  onSkip?: () => void
+}
+
+function IntroStep({ profileUrl, nfcSupported, onStart, onSkip }: IntroStepProps) {
+  return (
+    <div className="animate-fade-up space-y-8">
+      {/* Icon */}
+      <div className="flex justify-center">
+        <div className="relative">
+          <div className="w-24 h-24 rounded-3xl bg-tap-text-1 flex items-center justify-center">
+            <Wifi size={40} className="text-white" />
+          </div>
+          <span className="absolute -top-2 -right-2 text-2xl">⚡</span>
         </div>
       </div>
 
-      <h2 style={{ 
-        fontSize: '32px', 
-        fontWeight: '300', 
-        color: 'var(--tap-text-primary)',
-        marginBottom: '12px',
-        letterSpacing: '-0.03em'
-      }}>
-        Connecte ton bracelet
-      </h2>
+      {/* Text */}
+      <div className="space-y-3">
+        <p className="text-xs font-medium text-tap-text-3 uppercase tracking-widest">
+          Configuration
+        </p>
+        <h1 className="text-4xl font-bold text-tap-text-1 leading-tight">
+          Connecte<br />ton bracelet
+        </h1>
+        <p className="text-base text-tap-text-2 leading-relaxed">
+          Un simple tap suffit pour partager ton profil. Configure ton bracelet TAP en quelques secondes.
+        </p>
+      </div>
 
-      <p style={{ 
-        fontSize: '16px', 
-        color: 'var(--tap-text-secondary)', 
-        lineHeight: '1.6',
-        marginBottom: '40px',
-        maxWidth: '320px'
-      }}>
-        Un simple tap suffit pour partager ton profil. Configurons ton bracelet TAP en quelques secondes ✨
-      </p>
-
-      <div 
-        className="tap-card w-full p-5 rounded-2xl mb-8"
-        style={{ 
-          backgroundColor: 'var(--tap-bg-secondary)',
-          border: '1px solid var(--tap-border-default)'
-        }}
-      >
-        <div style={{ 
-          fontSize: '11px', 
-          textTransform: 'uppercase',
-          color: 'var(--tap-text-tertiary)',
-          letterSpacing: '0.1em',
-          marginBottom: '12px',
-          fontWeight: '500'
-        }}>
+      {/* URL card */}
+      <div className="bg-tap-surface rounded-2xl p-5 border border-tap-border">
+        <p className="text-xs font-medium text-tap-text-3 uppercase tracking-widest mb-3">
           Ton URL de profil
-        </div>
-        <div style={{ 
-          fontSize: '15px', 
-          color: 'var(--tap-accent)',
-          fontFamily: 'monospace',
-          wordBreak: 'break-all',
-          fontWeight: '500',
-          padding: '12px',
-          backgroundColor: 'var(--tap-bg-primary)',
-          borderRadius: '12px'
-        }}>
+        </p>
+        <p className="text-sm font-mono text-tap-accent break-all bg-tap-bg rounded-xl px-3 py-2.5">
           {profileUrl}
-        </div>
+        </p>
       </div>
 
-      <button
-        onClick={startNFCWrite}
-        disabled={!isNFCSupported}
-        className="tap-button w-full rounded-2xl mb-4"
-        style={{
-          background: isNFCSupported 
-            ? 'linear-gradient(135deg, var(--tap-accent) 0%, #E1306C 100%)' 
-            : 'var(--tap-bg-tertiary)',
-          color: '#ffffff',
-          fontSize: '16px',
-          fontWeight: '500',
-          height: '56px',
-          opacity: isNFCSupported ? 1 : 0.5
-        }}
-      >
-        🚀 Commencer la configuration
-      </button>
+      {/* NFC not supported warning */}
+      {!nfcSupported && (
+        <div className="flex items-start gap-3 p-4 rounded-2xl bg-tap-surface border border-tap-border">
+          <AlertCircle size={16} className="text-tap-accent mt-0.5 flex-shrink-0" />
+          <p className="text-sm text-tap-text-2">
+            NFC n'est pas disponible sur cet appareil. Tu pourras configurer ton bracelet depuis un téléphone compatible.
+          </p>
+        </div>
+      )}
 
-      {onSkip && (
+      {/* Actions */}
+      <div className="space-y-3">
         <button
-          onClick={onSkip}
-          className="tap-button"
-          style={{
-            color: 'var(--tap-text-secondary)',
-            fontSize: '14px',
-            padding: '12px',
-            fontWeight: '400'
-          }}
+          onClick={onStart}
+          disabled={!nfcSupported}
+          className="w-full h-14 rounded-2xl bg-tap-text-1 text-white text-base font-semibold transition-all duration-200 hover:-translate-y-0.5 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          Je le ferai plus tard
+          Commencer la configuration
         </button>
-      )}
-
-      {!isNFCSupported && (
-        <div 
-          className="tap-card mt-6 p-4 rounded-2xl flex items-start gap-3"
-          style={{ 
-            backgroundColor: '#FFF5F5',
-            border: '1px solid var(--tap-accent)33'
-          }}
-        >
-          <AlertCircle size={20} style={{ color: 'var(--tap-accent)', marginTop: '2px', flexShrink: 0 }} />
-          <span style={{ fontSize: '13px', color: 'var(--tap-accent)', lineHeight: '1.5' }}>
-            NFC n'est pas disponible sur cet appareil
-          </span>
-        </div>
-      )}
-    </div>
-  );
-
-  const renderScanning = () => (
-    <div className="flex flex-col items-center text-center px-6 animate-slide-up">
-      <div 
-        className="w-40 h-40 rounded-full flex items-center justify-center mb-8 relative"
-        style={{ background: 'linear-gradient(135deg, var(--tap-accent)20 0%, #E1306C20 100%)' }}
-      >
-        <div 
-          className="absolute inset-0 rounded-full animate-ping"
-          style={{ 
-            border: '3px solid var(--tap-accent)',
-            opacity: 0.4
-          }}
-        ></div>
-        <div 
-          className="absolute inset-4 rounded-full animate-ping"
-          style={{ 
-            border: '3px solid var(--tap-accent)',
-            opacity: 0.6,
-            animationDelay: '0.5s'
-          }}
-        ></div>
-        <Wifi size={56} style={{ color: 'var(--tap-accent)' }} />
+        {onSkip && (
+          <button
+            onClick={onSkip}
+            className="w-full h-11 text-sm text-tap-text-2 transition-all duration-200 hover:text-tap-text-1"
+          >
+            Je le ferai plus tard
+          </button>
+        )}
       </div>
-
-      <h2 style={{ 
-        fontSize: '28px', 
-        fontWeight: '300', 
-        color: 'var(--tap-text-primary)',
-        marginBottom: '12px',
-        letterSpacing: '-0.02em'
-      }}>
-        Approche ton bracelet
-      </h2>
-
-      <p style={{ 
-        fontSize: '16px', 
-        color: 'var(--tap-text-secondary)', 
-        lineHeight: '1.6',
-        maxWidth: '280px'
-      }}>
-        Maintiens-le près de l'arrière de ton téléphone jusqu'à la vibration
-      </p>
     </div>
-  );
+  )
+}
 
-  const renderWriting = () => (
-    <div className="flex flex-col items-center text-center px-6 animate-slide-up">
-      <div 
-        className="w-40 h-40 rounded-full flex items-center justify-center mb-8"
-        style={{ background: 'linear-gradient(135deg, var(--tap-accent) 0%, #E1306C 100%)' }}
-      >
-        <Loader2 size={56} color="#fff" className="animate-spin" />
-      </div>
-
-      <h2 style={{ 
-        fontSize: '28px', 
-        fontWeight: '300', 
-        color: 'var(--tap-text-primary)',
-        marginBottom: '12px',
-        letterSpacing: '-0.02em'
-      }}>
-        Ça y est presque...
-      </h2>
-
-      <p style={{ 
-        fontSize: '16px', 
-        color: 'var(--tap-text-secondary)', 
-        lineHeight: '1.6',
-        maxWidth: '280px'
-      }}>
-        Ne bouge pas, on écrit ton profil sur le bracelet ✨
-      </p>
-    </div>
-  );
-
-  const renderSuccess = () => (
-    <div className="flex flex-col items-center text-center px-6 animate-slide-up">
-      <div 
-        className="w-40 h-40 rounded-full flex items-center justify-center mb-8 relative"
-        style={{ 
-          background: 'linear-gradient(135deg, var(--tap-success) 0%, #1DB954 100%)'
-        }}
-      >
-        <CheckCircle size={72} color="#fff" />
-        <div 
-          className="absolute -bottom-3 left-1/2 -translate-x-1/2 text-4xl"
-        >
-          🎉
+function ScanningStep() {
+  return (
+    <div className="animate-fade-up flex flex-col items-center text-center space-y-8">
+      <div className="relative w-36 h-36 flex items-center justify-center">
+        <div className="absolute inset-0 rounded-full border-2 border-tap-text-1/20 animate-ping-ring" />
+        <div className="absolute inset-4 rounded-full border-2 border-tap-text-1/30 animate-ping-ring [animation-delay:0.4s]" />
+        <div className="w-20 h-20 rounded-full bg-tap-surface border border-tap-border flex items-center justify-center">
+          <Wifi size={32} className="text-tap-text-1" />
         </div>
       </div>
 
-      <h2 style={{ 
-        fontSize: '32px', 
-        fontWeight: '300', 
-        color: 'var(--tap-text-primary)',
-        marginBottom: '12px',
-        letterSpacing: '-0.03em'
-      }}>
-        Tout est prêt !
-      </h2>
+      <div className="space-y-3">
+        <h2 className="text-3xl font-bold text-tap-text-1">
+          Approche ton<br />bracelet
+        </h2>
+        <p className="text-tap-text-2 text-base leading-relaxed max-w-xs">
+          Maintiens-le contre l'arrière de ton téléphone jusqu'à la vibration.
+        </p>
+      </div>
+    </div>
+  )
+}
 
-      <p style={{ 
-        fontSize: '16px', 
-        color: 'var(--tap-text-secondary)', 
-        lineHeight: '1.6',
-        marginBottom: '40px',
-        maxWidth: '300px'
-      }}>
-        Ton bracelet est configuré. Tu peux maintenant partager ton profil d'un simple tap ⚡
-      </p>
+function WritingStep() {
+  return (
+    <div className="animate-fade-up flex flex-col items-center text-center space-y-8">
+      <div className="w-24 h-24 rounded-3xl bg-tap-text-1 flex items-center justify-center">
+        <Loader2 size={40} className="text-white animate-spin" />
+      </div>
+
+      <div className="space-y-3">
+        <h2 className="text-3xl font-bold text-tap-text-1">
+          Presque...
+        </h2>
+        <p className="text-tap-text-2 text-base leading-relaxed max-w-xs">
+          Ne bouge pas, on écrit ton profil sur le bracelet.
+        </p>
+      </div>
+    </div>
+  )
+}
+
+interface SuccessStepProps {
+  onComplete: () => void
+}
+
+function SuccessStep({ onComplete }: SuccessStepProps) {
+  return (
+    <div className="animate-fade-up flex flex-col items-center text-center space-y-8">
+      <div className="relative">
+        <div className="w-24 h-24 rounded-3xl bg-tap-success flex items-center justify-center">
+          <CheckCircle size={44} className="text-white" />
+        </div>
+        <span className="absolute -bottom-2 -right-2 text-2xl">🎉</span>
+      </div>
+
+      <div className="space-y-3">
+        <h2 className="text-3xl font-bold text-tap-text-1">
+          Tout est prêt !
+        </h2>
+        <p className="text-tap-text-2 text-base leading-relaxed max-w-xs">
+          Ton bracelet est configuré. Partage ton profil d'un simple tap.
+        </p>
+      </div>
 
       <button
         onClick={onComplete}
-        className="tap-button w-full rounded-2xl"
-        style={{
-          background: 'linear-gradient(135deg, var(--tap-success) 0%, #1DB954 100%)',
-          color: '#ffffff',
-          fontSize: '16px',
-          fontWeight: '500',
-          height: '56px'
-        }}
+        className="w-full h-14 rounded-2xl bg-tap-success text-white text-base font-semibold transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
       >
         Découvrir mon profil
       </button>
     </div>
-  );
+  )
+}
 
-  const renderError = () => (
-    <div className="flex flex-col items-center text-center px-6 animate-slide-up">
-      <div 
-        className="w-40 h-40 rounded-full flex items-center justify-center mb-8"
-        style={{ background: 'linear-gradient(135deg, var(--tap-accent)20 0%, #FF6B6B20 100%)' }}
-      >
-        <AlertCircle size={72} style={{ color: 'var(--tap-accent)' }} />
+interface ErrorStepProps {
+  message: string
+  onRetry: () => void
+  onSkip?: () => void
+}
+
+function ErrorStep({ message, onRetry, onSkip }: ErrorStepProps) {
+  return (
+    <div className="animate-fade-up flex flex-col items-center text-center space-y-8">
+      <div className="w-24 h-24 rounded-3xl bg-tap-surface border border-tap-border flex items-center justify-center">
+        <AlertCircle size={40} className="text-tap-accent" />
       </div>
 
-      <h2 style={{ 
-        fontSize: '28px', 
-        fontWeight: '300', 
-        color: 'var(--tap-text-primary)',
-        marginBottom: '12px',
-        letterSpacing: '-0.02em'
-      }}>
-        Oups 😅
-      </h2>
+      <div className="space-y-3">
+        <h2 className="text-3xl font-bold text-tap-text-1">Oups 😅</h2>
+        <p className="text-tap-text-2 text-base leading-relaxed max-w-xs">
+          {message || 'Impossible de configurer le bracelet. Rapproche-le davantage et réessaie.'}
+        </p>
+      </div>
 
-      <p style={{ 
-        fontSize: '16px', 
-        color: 'var(--tap-text-secondary)', 
-        lineHeight: '1.6',
-        marginBottom: '40px',
-        maxWidth: '320px'
-      }}>
-        {errorMessage || 'Impossible de configurer le bracelet. Réessaye en maintenant le bracelet plus près de ton téléphone.'}
-      </p>
-
-      <button
-        onClick={() => setCurrentStep('intro')}
-        className="tap-button w-full rounded-2xl mb-4"
-        style={{
-          background: 'linear-gradient(135deg, var(--tap-accent) 0%, #E1306C 100%)',
-          color: '#ffffff',
-          fontSize: '16px',
-          fontWeight: '500',
-          height: '56px'
-        }}
-      >
-        Réessayer
-      </button>
-
-      {onSkip && (
+      <div className="w-full space-y-3">
         <button
-          onClick={onSkip}
-          className="tap-button"
-          style={{
-            color: 'var(--tap-text-secondary)',
-            fontSize: '14px',
-            padding: '12px'
-          }}
+          onClick={onRetry}
+          className="w-full h-14 rounded-2xl bg-tap-text-1 text-white text-base font-semibold transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
         >
-          Je le ferai plus tard
+          Réessayer
         </button>
-      )}
+        {onSkip && (
+          <button
+            onClick={onSkip}
+            className="w-full h-11 text-sm text-tap-text-2 transition-all duration-200 hover:text-tap-text-1"
+          >
+            Je le ferai plus tard
+          </button>
+        )}
+      </div>
     </div>
-  );
-
-  return (
-    <div 
-      className="min-h-screen flex flex-col items-center justify-center"
-      style={{ backgroundColor: 'var(--tap-bg-primary)' }}
-    >
-      {currentStep === 'intro' && renderIntro()}
-      {currentStep === 'scanning' && renderScanning()}
-      {currentStep === 'writing' && renderWriting()}
-      {currentStep === 'success' && renderSuccess()}
-      {currentStep === 'error' && renderError()}
-
-      <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.8; transform: scale(1.05); }
-        }
-        
-        @keyframes ping {
-          75%, 100% {
-            transform: scale(2);
-            opacity: 0;
-          }
-        }
-        
-        @keyframes scale-in {
-          0% { transform: scale(0.5); opacity: 0; }
-          100% { transform: scale(1); opacity: 1; }
-        }
-
-        .animate-spin {
-          animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-
-        @keyframes slide-up {
-          from { transform: translateY(20px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
-        }
-
-        @keyframes float {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-10px); }
-        }
-      `}</style>
-    </div>
-  );
+  )
 }
