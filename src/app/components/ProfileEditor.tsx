@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import {
-  ChevronLeft, Plus, X, Instagram, Linkedin, Music, Mail,
-  MessageCircle, Globe, Camera, Trash2, Sparkles, Image as ImageIcon, Loader2
+  ChevronLeft, Plus, Instagram, Linkedin, Music, Mail,
+  MessageCircle, Globe, Trash2, Sparkles, Loader2
 } from 'lucide-react'
 import { Switch } from '../components/ui/switch'
-import { ImageWithFallback } from './figma/ImageWithFallback'
 import { supabase } from '../../lib/supabase'
 import type { SupabaseProfile } from '../App'
 
@@ -178,18 +177,6 @@ export function ProfileEditor({ onBack, profile: supabaseProfile }: ProfileEdito
     }))
   }
 
-  const addPhoto = () => {
-    if (profile.photos.length >= 6) return
-    updateProfile('photos', [
-      ...profile.photos,
-      'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=400',
-    ])
-  }
-
-  const removePhoto = (index: number) => {
-    updateProfile('photos', profile.photos.filter((_, i) => i !== index))
-  }
-
   const addPrompt = () => {
     if (profile.prompts.length >= 5) return
     const newPrompts: Prompt[] = [...profile.prompts, { question: AVAILABLE_PROMPTS[0], answer: '' }]
@@ -286,42 +273,6 @@ export function ProfileEditor({ onBack, profile: supabaseProfile }: ProfileEdito
           </div>
         </section>
 
-        {/* Photos */}
-        <section className="space-y-3">
-          <SectionLabel icon={<ImageIcon size={13} />} label={`Photos · ${profile.photos.length}/6`} />
-          <div className="grid grid-cols-3 gap-2.5">
-            {profile.photos.map((photo, index) => (
-              <div
-                key={index}
-                className="relative aspect-square rounded-2xl overflow-hidden bg-tap-surface border border-tap-border group"
-              >
-                <ImageWithFallback
-                  src={photo}
-                  alt={`Photo ${index + 1}`}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-200 flex items-center justify-center">
-                  <button
-                    onClick={() => removePhoto(index)}
-                    className="opacity-0 group-hover:opacity-100 w-8 h-8 rounded-full bg-black/80 text-white flex items-center justify-center transition-all"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              </div>
-            ))}
-
-            {profile.photos.length < 6 && (
-              <button
-                onClick={addPhoto}
-                className="aspect-square rounded-2xl border-2 border-dashed border-tap-border flex flex-col items-center justify-center gap-1.5 transition-all hover:border-tap-text-2"
-              >
-                <Camera size={20} className="text-tap-text-3" />
-                <span className="text-xs text-tap-text-3 font-medium">Ajouter</span>
-              </button>
-            )}
-          </div>
-        </section>
 
         {/* Prompts */}
         <section className="space-y-3">
