@@ -4,24 +4,18 @@ import { Wifi, CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
 interface BraceletSetupProps {
   onComplete: () => void
   onSkip?: () => void
+  username: string
 }
 
 type Step = 'intro' | 'scanning' | 'writing' | 'success' | 'error'
 
-function generateUserId(): string {
-  const existing = localStorage.getItem('tap-user-id')
-  if (existing) return existing
-  const id = Math.random().toString(36).substring(2, 10)
-  localStorage.setItem('tap-user-id', id)
-  return id
-}
 
-export function BraceletSetup({ onComplete, onSkip }: BraceletSetupProps) {
+export function BraceletSetup({ onComplete, onSkip, username }: BraceletSetupProps) {
   const [step, setStep]             = useState<Step>('intro')
   const [errorMsg, setErrorMsg]     = useState('')
   const [nfcSupported, setNfcSupported] = useState(true)
 
-  const profileUrl = `https://tap.me/${generateUserId()}`
+  const profileUrl = `${window.location.origin}/p/${username}`
 
   useEffect(() => {
     if (!('NDEFReader' in window)) setNfcSupported(false)
@@ -37,10 +31,8 @@ export function BraceletSetup({ onComplete, onSkip }: BraceletSetupProps) {
     setStep('scanning')
 
     try {
-      // @ts-expect-error — NDEFReader not yet in TS lib
-      const ndef = new NDEFReader()
+      const ndef = new (window as unknown as { NDEFReader: new () => { write: (r: unknown) => Promise<void> } }).NDEFReader()
       setStep('writing')
-      // @ts-expect-error — NDEFReader not yet in TS lib
       await ndef.write({ records: [{ recordType: 'url', data: profileUrl }] })
 
       localStorage.setItem('tap-bracelet-configured', 'true')

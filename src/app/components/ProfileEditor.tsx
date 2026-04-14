@@ -2,13 +2,16 @@ import { useState } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import {
   ChevronLeft, Plus, X, Instagram, Linkedin, Music, Mail,
-  MessageCircle, Globe, Camera, Trash2, Sparkles, Image as ImageIcon
+  MessageCircle, Globe, Camera, Trash2, Sparkles, Image as ImageIcon, Loader2
 } from 'lucide-react'
 import { Switch } from '../components/ui/switch'
 import { ImageWithFallback } from './figma/ImageWithFallback'
+import { supabase } from '../../lib/supabase'
+import type { SupabaseProfile } from '../App'
 
 interface ProfileEditorProps {
   onBack: () => void
+  profile: SupabaseProfile
 }
 
 type Mode = 'Soirée' | 'Pro' | 'Sport' | 'Discret'
@@ -103,10 +106,42 @@ const DEFAULT_PROFILES: Record<Mode, ModeProfile> = {
 
 const MODES: Mode[] = ['Soirée', 'Pro', 'Sport', 'Discret']
 
-export function ProfileEditor({ onBack }: ProfileEditorProps) {
+export function ProfileEditor({ onBack, profile: supabaseProfile }: ProfileEditorProps) {
   const [activeMode, setActiveMode] = useState<Mode>('Soirée')
-  const [userName, setUserName]     = useState('Julien Moreau')
+  const [userName, setUserName]     = useState(supabaseProfile.display_name)
   const [profiles, setProfiles]     = useState<Record<Mode, ModeProfile>>(DEFAULT_PROFILES)
+  const [saving, setSaving]         = useState(false)
+
+  const handleSave = async () => {
+    setSaving(true)
+    const activeProfile = profiles[activeMode]
+
+    // 1. Met à jour le profil
+    await supabase.from('profiles').update({
+      display_name: userName,
+    }).eq('id', supabaseProfile.id)
+
+    // 2. Supprime les anciens liens
+    await supabase.from('links').delete().eq('profile_id', supabaseProfile.id)
+
+    // 3. Insère les nouveaux liens (uniquement ceux activés)
+    const linksToSave = activeProfile.links
+      .filter(l => l.enabled)
+      .map((l, i) => ({
+        profile_id: supabaseProfile.id,
+        title: l.name,
+        url: l.handle,
+        icon: l.id,
+        order: i,
+      }))
+
+    if (linksToSave.length > 0) {
+      await supabase.from('links').insert(linksToSave)
+    }
+
+    setSaving(false)
+    onBack()
+  }
 
   const profile = profiles[activeMode]
 
@@ -356,10 +391,12 @@ export function ProfileEditor({ onBack }: ProfileEditorProps) {
       <div className="fixed bottom-0 left-0 right-0 px-5 py-5 bg-tap-bg/90 backdrop-blur-md border-t border-tap-border">
         <div className="mx-auto" style={{ maxWidth: '430px' }}>
           <button
-            onClick={onBack}
-            className="w-full h-14 rounded-2xl bg-tap-text-1 text-white text-base font-semibold transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
+            onClick={handleSave}
+            disabled={saving}
+            className="w-full h-14 rounded-2xl bg-tap-text-1 text-white text-base font-semibold transition-all duration-200 hover:-translate-y-0.5 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            Enregistrer les modifications
+            {saving && <Loader2 size={18} className="animate-spin" />}
+            {saving ? 'Enregistrement...' : 'Enregistrer les modifications'}
           </button>
         </div>
       </div>

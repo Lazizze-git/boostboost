@@ -36,12 +36,15 @@ const PLATFORMS: Platform[] = [
   { id: 'whatsapp',  name: 'WhatsApp',  icon: MessageCircle,  color: '#25D366', handle: '+33 6 12 34 56 78',    modes: ['Sport'] },
 ]
 
+import type { SupabaseProfile } from '../App'
+
 interface ProfilePreviewProps {
+  profile: SupabaseProfile
   onEdit: () => void
   onReconfigure?: () => void
 }
 
-export function ProfilePreview({ onEdit, onReconfigure }: ProfilePreviewProps) {
+export function ProfilePreview({ profile, onEdit, onReconfigure }: ProfilePreviewProps) {
   const [activeMode, setActiveMode]               = useState<Mode>('Soirée')
   const [isBraceletConfigured, setIsBraceletConfigured] = useState(false)
 
@@ -75,7 +78,7 @@ export function ProfilePreview({ onEdit, onReconfigure }: ProfilePreviewProps) {
             Profil TAP
           </p>
           <h1 className="text-[2.6rem] font-bold text-tap-text-1 leading-tight tracking-tight">
-            Salut,<br />Julien 👋
+            Salut,<br />{profile.display_name.split(' ')[0]} 👋
           </h1>
         </header>
 
@@ -116,7 +119,7 @@ export function ProfilePreview({ onEdit, onReconfigure }: ProfilePreviewProps) {
               </div>
               <div className="flex-1 min-w-0">
                 <h2 className="text-xl font-bold text-tap-text-1 tracking-tight mb-1">
-                  Julien Moreau
+                  {profile.display_name}
                 </h2>
                 <p className="text-sm text-tap-text-2 leading-relaxed">
                   {config.bio}
