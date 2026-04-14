@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import type { LucideIcon } from 'lucide-react'
-import { Instagram, Linkedin, Music, Mail, MessageCircle, Globe, Wifi, ArrowRight, Share2, Pencil, Settings } from 'lucide-react'
+import { Instagram, Linkedin, Music, Mail, MessageCircle, Globe, ArrowRight, Share2, Pencil, Settings, Copy, Check } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 
 type Mode = 'Soirée' | 'Pro' | 'Sport' | 'Discret'
@@ -25,7 +25,6 @@ import type { SupabaseProfile } from '../App'
 interface ProfilePreviewProps {
   profile: SupabaseProfile
   onEdit: () => void
-  onReconfigure?: () => void
   onSettings: () => void
 }
 
@@ -57,15 +56,9 @@ interface SavedLink {
   order: number
 }
 
-export function ProfilePreview({ profile, onEdit, onReconfigure, onSettings }: ProfilePreviewProps) {
-  const [activeMode, setActiveMode]               = useState<Mode>('Soirée')
-  const [isBraceletConfigured, setIsBraceletConfigured] = useState(false)
-  const [savedLinks, setSavedLinks]               = useState<SavedLink[]>([])
-
-  useEffect(() => {
-    const configured = localStorage.getItem('tap-bracelet-configured') === 'true'
-    setIsBraceletConfigured(configured)
-  }, [])
+export function ProfilePreview({ profile, onEdit, onSettings }: ProfilePreviewProps) {
+  const [activeMode, setActiveMode] = useState<Mode>('Soirée')
+  const [savedLinks, setSavedLinks] = useState<SavedLink[]>([])
 
   useEffect(() => {
     supabase
@@ -184,33 +177,8 @@ export function ProfilePreview({ profile, onEdit, onReconfigure, onSettings }: P
           </div>
         </div>
 
-        {/* ─── Bracelet status ─── */}
-        <div className="bg-tap-surface rounded-2xl border border-tap-border p-5 flex items-center justify-between animate-fade-up [animation-delay:160ms]">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-tap-bg flex items-center justify-center">
-              <Wifi size={18} className="text-tap-text-3" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-tap-text-1">
-                {isBraceletConfigured ? 'Bracelet configuré' : 'Bracelet non configuré'}
-              </p>
-              <p className="text-xs text-tap-text-3 mt-0.5">
-                {isBraceletConfigured ? 'Prêt à partager · 87%' : 'Synchronise ton profil'}
-              </p>
-            </div>
-          </div>
-
-          {!isBraceletConfigured && onReconfigure ? (
-            <button
-              onClick={onReconfigure}
-              className="px-4 py-2 rounded-xl bg-tap-text-1 text-black text-xs font-semibold transition-all active:scale-95"
-            >
-              Configurer
-            </button>
-          ) : (
-            <span className="w-2 h-2 rounded-full bg-tap-success" />
-          )}
-        </div>
+        {/* ─── Profile URL ─── */}
+        <ProfileUrlCard username={profile.username} />
 
         {/* ─── Social links ─── */}
         <div className="animate-fade-up [animation-delay:200ms] space-y-3">
@@ -253,6 +221,32 @@ export function ProfilePreview({ profile, onEdit, onReconfigure, onSettings }: P
             propulsé par TAP
           </p>
         </div>
+      </div>
+    </div>
+  )
+}
+
+function ProfileUrlCard({ username }: { username: string }) {
+  const [copied, setCopied] = useState(false)
+  const url = `${window.location.origin}/p/${username}`
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(url)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <div className="bg-tap-surface rounded-2xl border border-tap-border p-4 animate-fade-up [animation-delay:160ms]">
+      <p className="text-xs font-medium text-tap-text-3 uppercase tracking-widest mb-2">Ton lien public</p>
+      <div className="flex items-center gap-2">
+        <p className="flex-1 text-xs font-mono text-tap-text-2 truncate">{url}</p>
+        <button
+          onClick={handleCopy}
+          className="flex-shrink-0 w-8 h-8 rounded-lg bg-tap-bg border border-tap-border flex items-center justify-center transition-all active:scale-95"
+        >
+          {copied ? <Check size={14} className="text-tap-success" /> : <Copy size={14} className="text-tap-text-2" />}
+        </button>
       </div>
     </div>
   )

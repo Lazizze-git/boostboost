@@ -70,11 +70,6 @@ function App() {
       .then(() => {})
   }, [session, profile])
 
-  const handleReconfigure = () => {
-    localStorage.removeItem('tap-bracelet-configured')
-    localStorage.removeItem('tap-bracelet-url')
-    setCurrentView('setup')
-  }
 
   // Chargement initial
   if (authLoading) {
@@ -107,7 +102,6 @@ function App() {
           <ProfilePreview
             profile={profile}
             onEdit={() => setCurrentView('editor')}
-            onReconfigure={handleReconfigure}
             onSettings={() => setCurrentView('settings')}
           />
         ) : currentView === 'settings' ? (
@@ -115,7 +109,7 @@ function App() {
             profile={profile}
             onBack={() => setCurrentView('preview')}
             onUpdated={fetchProfile}
-            onReconfigure={() => { handleReconfigure(); setCurrentView('setup') }}
+            onReconfigure={() => setCurrentView('setup')}
           />
         ) : (
           <ProfileEditor
