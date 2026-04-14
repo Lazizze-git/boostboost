@@ -229,7 +229,7 @@ export function ProfileEditor({ onBack, profile: supabaseProfile }: ProfileEdito
             Éditeur de profil
           </p>
           <h1 className="text-2xl font-bold text-tap-text-1 tracking-tight">
-            Mode {activeMode} {profile.emoji}
+            Mode {activeMode}
           </h1>
         </div>
 
@@ -242,13 +242,12 @@ export function ProfileEditor({ onBack, profile: supabaseProfile }: ProfileEdito
             <button
               key={mode}
               onClick={() => setActiveMode(mode)}
-              className={`flex-shrink-0 flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-200 active:scale-95 ${
+              className={`flex-shrink-0 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-200 active:scale-95 ${
                 activeMode === mode
-                  ? 'bg-tap-text-1 text-white'
+                  ? 'bg-tap-text-1 text-black'
                   : 'bg-tap-surface text-tap-text-2 border border-tap-border'
               }`}
             >
-              <span>{profiles[mode].emoji}</span>
               {mode}
             </button>
           ))}
@@ -417,7 +416,7 @@ export function ProfileEditor({ onBack, profile: supabaseProfile }: ProfileEdito
           <button
             onClick={handleSave}
             disabled={saving}
-            className="w-full h-14 rounded-2xl bg-tap-text-1 text-white text-base font-semibold transition-all duration-200 hover:-translate-y-0.5 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full h-14 rounded-2xl bg-tap-text-1 text-black text-base font-semibold transition-all duration-200 hover:-translate-y-0.5 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {saving && <Loader2 size={18} className="animate-spin" />}
             {saving ? 'Enregistrement...' : 'Enregistrer les modifications'}
