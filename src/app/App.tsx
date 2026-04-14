@@ -54,7 +54,21 @@ function App() {
       .eq('user_id', session.user.id)
       .maybeSingle()
     setProfile(data)
+    return data
   }
+
+  // Lie un bracelet en attente après connexion
+  useEffect(() => {
+    if (!session || !profile) return
+    const pendingTapId = localStorage.getItem('tap-pending-link')
+    if (!pendingTapId) return
+    localStorage.removeItem('tap-pending-link')
+    supabase
+      .from('bracelets')
+      .update({ profile_id: profile.id, linked_at: new Date().toISOString() })
+      .eq('tap_id', pendingTapId.trim())
+      .then(() => {})
+  }, [session, profile])
 
   const handleReconfigure = () => {
     localStorage.removeItem('tap-bracelet-configured')
