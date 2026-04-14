@@ -133,7 +133,7 @@ function IntroStep({ profileUrl, nfcSupported, onStart, onSkip }: IntroStepProps
         <button
           onClick={onStart}
           disabled={!nfcSupported}
-          className="w-full h-14 rounded-2xl bg-tap-text-1 text-white text-base font-semibold transition-all duration-200 hover:-translate-y-0.5 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+          className="w-full h-14 rounded-2xl bg-tap-text-1 text-black text-base font-semibold transition-all duration-200 hover:-translate-y-0.5 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           Commencer la configuration
         </button>
@@ -248,7 +248,7 @@ function ErrorStep({ message, onRetry, onSkip }: ErrorStepProps) {
       <div className="w-full space-y-3">
         <button
           onClick={onRetry}
-          className="w-full h-14 rounded-2xl bg-tap-text-1 text-white text-base font-semibold transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
+          className="w-full h-14 rounded-2xl bg-tap-text-1 text-black text-base font-semibold transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
         >
           Réessayer
         </button>
