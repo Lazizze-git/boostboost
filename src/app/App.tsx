@@ -6,6 +6,7 @@ import { ProfileSetup } from './components/ProfileSetup'
 import { ProfileEditor } from './components/ProfileEditor'
 import { ProfilePreview } from './components/ProfilePreview'
 import { BraceletSetup } from './components/BraceletSetup'
+import { Settings } from './components/Settings'
 
 export interface SupabaseProfile {
   id: string
@@ -16,7 +17,7 @@ export interface SupabaseProfile {
   avatar_url: string | null
 }
 
-type View = 'setup' | 'preview' | 'editor'
+type View = 'setup' | 'preview' | 'editor' | 'settings'
 
 function App() {
   const [session, setSession]         = useState<Session | null>(null)
@@ -93,6 +94,13 @@ function App() {
             profile={profile}
             onEdit={() => setCurrentView('editor')}
             onReconfigure={handleReconfigure}
+            onSettings={() => setCurrentView('settings')}
+          />
+        ) : currentView === 'settings' ? (
+          <Settings
+            profile={profile}
+            onBack={() => setCurrentView('preview')}
+            onUpdated={fetchProfile}
           />
         ) : (
           <ProfileEditor

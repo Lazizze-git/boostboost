@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import type { LucideIcon } from 'lucide-react'
-import { Instagram, Linkedin, Music, Mail, MessageCircle, Globe, Wifi, ArrowRight, Share2, Pencil } from 'lucide-react'
+import { Instagram, Linkedin, Music, Mail, MessageCircle, Globe, Wifi, ArrowRight, Share2, Pencil, Settings } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 
 type Mode = 'Soirée' | 'Pro' | 'Sport' | 'Discret'
@@ -26,6 +26,7 @@ interface ProfilePreviewProps {
   profile: SupabaseProfile
   onEdit: () => void
   onReconfigure?: () => void
+  onSettings: () => void
 }
 
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -56,7 +57,7 @@ interface SavedLink {
   order: number
 }
 
-export function ProfilePreview({ profile, onEdit, onReconfigure }: ProfilePreviewProps) {
+export function ProfilePreview({ profile, onEdit, onReconfigure, onSettings }: ProfilePreviewProps) {
   const [activeMode, setActiveMode]               = useState<Mode>('Soirée')
   const [isBraceletConfigured, setIsBraceletConfigured] = useState(false)
   const [savedLinks, setSavedLinks]               = useState<SavedLink[]>([])
@@ -94,13 +95,21 @@ export function ProfilePreview({ profile, onEdit, onReconfigure }: ProfilePrevie
       <div className="relative z-10 px-5 pt-14 pb-28 space-y-7">
 
         {/* ─── Header ─── */}
-        <header className="animate-fade-up">
-          <p className="text-xs font-medium text-tap-text-3 uppercase tracking-widest mb-2">
-            Profil TAP
-          </p>
-          <h1 className="text-[2.6rem] font-bold text-tap-text-1 leading-tight tracking-tight">
-            Salut,<br />{profile.display_name.split(' ')[0]}
-          </h1>
+        <header className="animate-fade-up flex items-start justify-between">
+          <div>
+            <p className="text-xs font-medium text-tap-text-3 uppercase tracking-widest mb-2">
+              Profil TAP
+            </p>
+            <h1 className="text-[2.6rem] font-bold text-tap-text-1 leading-tight tracking-tight">
+              Salut,<br />{profile.display_name.split(' ')[0]}
+            </h1>
+          </div>
+          <button
+            onClick={onSettings}
+            className="mt-1 w-10 h-10 rounded-xl bg-tap-surface border border-tap-border flex items-center justify-center text-tap-text-2 hover:text-tap-text-1 transition-colors active:scale-95"
+          >
+            <Settings size={18} />
+          </button>
         </header>
 
         {/* ─── Mode selector ─── */}
