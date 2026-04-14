@@ -120,16 +120,17 @@ export function ProfileEditor({ onBack, profile: supabaseProfile }: ProfileEdito
         .eq('profile_id', supabaseProfile.id)
         .order('order')
 
-      if (!data || data.length === 0) return
-
       setProfiles(prev => ({
         ...prev,
         [activeMode]: {
           ...prev[activeMode],
-          links: prev[activeMode].links.map(link => {
-            const saved = data.find(d => d.icon === link.id)
-            return saved ? { ...link, handle: saved.url, enabled: true } : { ...link, enabled: false }
-          }),
+          bio: supabaseProfile.bio || prev[activeMode].bio,
+          links: data && data.length > 0
+            ? prev[activeMode].links.map(link => {
+                const saved = data.find(d => d.icon === link.id)
+                return saved ? { ...link, handle: saved.url, enabled: true } : { ...link, enabled: false }
+              })
+            : prev[activeMode].links,
         },
       }))
     }
@@ -143,6 +144,7 @@ export function ProfileEditor({ onBack, profile: supabaseProfile }: ProfileEdito
     // 1. Met à jour le profil
     await supabase.from('profiles').update({
       display_name: userName,
+      bio: activeProfile.bio,
     }).eq('id', supabaseProfile.id)
 
     // 2. Supprime les anciens liens
