@@ -3,19 +3,15 @@ import type { LucideIcon } from 'lucide-react'
 import { Instagram, Linkedin, Music, Mail, MessageCircle, Globe, ArrowRight, Share2, Pencil, Settings, Copy, Check } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 
-type Mode = 'Soirée' | 'Pro' | 'Sport' | 'Discret'
+type Mode = 'Soirée' | 'Pro'
 
 interface ModeConfig {
-  emoji: string
   color: string
-  bio: string
 }
 
 const MODES: Record<Mode, ModeConfig> = {
-  'Soirée':  { emoji: '🎉', color: '#C8506A', bio: 'DJ le weekend, dev la semaine 🎧' },
-  'Pro':     { emoji: '💼', color: '#3A6DBF', bio: 'Full-stack developer · React & Node.js' },
-  'Sport':   { emoji: '⚡', color: '#2A8A5A', bio: 'Runner · Cycliste · Outdoor enthusiast' },
-  'Discret': { emoji: '🔒', color: '#6A4AB8', bio: 'Contact minimal' },
+  'Soirée': { color: '#C8506A' },
+  'Pro':    { color: '#3A6DBF' },
 }
 
 
@@ -57,7 +53,7 @@ interface SavedLink {
 }
 
 export function ProfilePreview({ profile, onEdit, onSettings }: ProfilePreviewProps) {
-  const [activeMode, setActiveMode] = useState<Mode>('Soirée')
+  const [activeMode, setActiveMode] = useState<Mode>((profile.active_mode as Mode) || 'Soirée')
   const [savedLinks, setSavedLinks] = useState<SavedLink[]>([])
 
   useEffect(() => {
@@ -65,9 +61,15 @@ export function ProfilePreview({ profile, onEdit, onSettings }: ProfilePreviewPr
       .from('links')
       .select('*')
       .eq('profile_id', profile.id)
+      .eq('mode', activeMode)
       .order('order')
       .then(({ data }) => setSavedLinks(data ?? []))
-  }, [profile.id])
+  }, [profile.id, activeMode])
+
+  const switchMode = async (mode: Mode) => {
+    setActiveMode(mode)
+    await supabase.from('profiles').update({ active_mode: mode }).eq('id', profile.id)
+  }
 
   const modeKeys = Object.keys(MODES) as Mode[]
   const config   = MODES[activeMode]
@@ -113,7 +115,7 @@ export function ProfilePreview({ profile, onEdit, onSettings }: ProfilePreviewPr
           {modeKeys.map((mode) => (
             <button
               key={mode}
-              onClick={() => setActiveMode(mode)}
+              onClick={() => switchMode(mode)}
               className={`flex-shrink-0 px-4 py-2.5 rounded-2xl text-sm font-medium transition-all duration-200 active:scale-95 ${
                 activeMode === mode
                   ? 'bg-tap-text-1 text-black'
@@ -143,9 +145,11 @@ export function ProfilePreview({ profile, onEdit, onSettings }: ProfilePreviewPr
                 <h2 className="text-xl font-bold text-tap-text-1 tracking-tight mb-1">
                   {profile.display_name}
                 </h2>
-                <p className="text-sm text-tap-text-2 leading-relaxed">
-                  {config.bio}
-                </p>
+                {(activeMode === 'Soirée' ? profile.bio_soiree : profile.bio_pro) && (
+                  <p className="text-sm text-tap-text-2 leading-relaxed">
+                    {activeMode === 'Soirée' ? profile.bio_soiree : profile.bio_pro}
+                  </p>
+                )}
               </div>
             </div>
 

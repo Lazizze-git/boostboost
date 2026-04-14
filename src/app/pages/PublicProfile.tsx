@@ -8,6 +8,9 @@ interface Profile {
   username: string
   display_name: string
   bio: string | null
+  bio_soiree: string | null
+  bio_pro: string | null
+  active_mode: string | null
 }
 
 interface Link {
@@ -69,6 +72,7 @@ export function PublicProfile() {
       .from('links')
       .select('*')
       .eq('profile_id', profileData.id)
+      .eq('mode', profileData.active_mode || 'Soirée')
       .order('order')
 
     setLinks(linksData ?? [])
@@ -113,9 +117,10 @@ export function PublicProfile() {
             {profile.display_name}
           </h1>
           <p className="text-sm text-tap-text-3 mb-1">@{profile.username}</p>
-          {profile.bio && (
-            <p className="text-sm text-tap-text-2 mt-3 leading-relaxed">{profile.bio}</p>
-          )}
+          {(() => {
+            const bio = profile.active_mode === 'Pro' ? profile.bio_pro : profile.bio_soiree
+            return bio ? <p className="text-sm text-tap-text-2 mt-3 leading-relaxed">{bio}</p> : null
+          })()}
         </div>
 
         {/* Links */}

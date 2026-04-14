@@ -14,6 +14,9 @@ export interface SupabaseProfile {
   username: string
   display_name: string
   bio: string
+  bio_soiree: string | null
+  bio_pro: string | null
+  active_mode: string
   avatar_url: string | null
 }
 

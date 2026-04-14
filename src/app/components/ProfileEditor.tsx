@@ -13,7 +13,7 @@ interface ProfileEditorProps {
   profile: SupabaseProfile
 }
 
-type Mode = 'Soirée' | 'Pro' | 'Sport' | 'Discret'
+type Mode = 'Soirée' | 'Pro'
 
 interface Prompt {
   question: string
@@ -80,30 +80,9 @@ const DEFAULT_PROFILES: Record<Mode, ModeProfile> = {
       { id: 'email',     name: 'Email',     icon: Mail,          color: '#3A6DBF', handle: 'j.moreau@gmail.com',   enabled: true },
     ],
   },
-  'Sport': {
-    emoji: '⚡', color: '#2A8A5A',
-    bio: 'Runner · Cycliste · Outdoor enthusiast',
-    photos: ['https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400'],
-    prompts: [
-      { question: 'Mon défi actuel 🚀', answer: 'Préparer mon premier marathon en moins de 4h' },
-    ],
-    links: [
-      { id: 'whatsapp',  name: 'WhatsApp',  icon: MessageCircle, color: '#25D366', handle: '+33 6 12 34 56 78',    enabled: true },
-      { id: 'email',     name: 'Email',     icon: Mail,          color: '#3A6DBF', handle: 'j.moreau@gmail.com',   enabled: true },
-    ],
-  },
-  'Discret': {
-    emoji: '🔒', color: '#6A4AB8',
-    bio: 'Contact minimal',
-    photos: [],
-    prompts: [],
-    links: [
-      { id: 'email', name: 'Email', icon: Mail, color: '#3A6DBF', handle: 'j.moreau@gmail.com', enabled: true },
-    ],
-  },
 }
 
-const MODES: Mode[] = ['Soirée', 'Pro', 'Sport', 'Discret']
+const MODES: Mode[] = ['Soirée', 'Pro']
 
 export function ProfileEditor({ onBack, profile: supabaseProfile }: ProfileEditorProps) {
   const [activeMode, setActiveMode] = useState<Mode>('Soirée')
@@ -112,28 +91,32 @@ export function ProfileEditor({ onBack, profile: supabaseProfile }: ProfileEdito
   const [saving, setSaving]         = useState(false)
 
   useEffect(() => {
-    const loadLinks = async () => {
+    const loadAllLinks = async () => {
       const { data } = await supabase
         .from('links')
         .select('*')
         .eq('profile_id', supabaseProfile.id)
         .order('order')
 
-      setProfiles(prev => ({
-        ...prev,
-        [activeMode]: {
-          ...prev[activeMode],
-          bio: supabaseProfile.bio || prev[activeMode].bio,
-          links: data && data.length > 0
-            ? prev[activeMode].links.map(link => {
-                const saved = data.find(d => d.icon === link.id)
-                return saved ? { ...link, handle: saved.url, enabled: true } : { ...link, enabled: false }
-              })
-            : prev[activeMode].links,
-        },
-      }))
+      const allLinks = data ?? []
+
+      setProfiles(prev => {
+        const updated = { ...prev }
+        for (const mode of MODES) {
+          const modeLinks = allLinks.filter(d => d.mode === mode)
+          updated[mode] = {
+            ...prev[mode],
+            bio: (mode === 'Soirée' ? supabaseProfile.bio_soiree : supabaseProfile.bio_pro) || prev[mode].bio,
+            links: prev[mode].links.map(link => {
+              const saved = modeLinks.find(d => d.icon === link.id)
+              return saved ? { ...link, handle: saved.url, enabled: true } : { ...link, enabled: false }
+            }),
+          }
+        }
+        return updated
+      })
     }
-    loadLinks()
+    loadAllLinks()
   }, [supabaseProfile.id])
 
   const handleSave = async () => {
@@ -143,13 +126,15 @@ export function ProfileEditor({ onBack, profile: supabaseProfile }: ProfileEdito
     // 1. Met à jour le profil
     await supabase.from('profiles').update({
       display_name: userName,
-      bio: activeProfile.bio,
+      ...(activeMode === 'Soirée' ? { bio_soiree: activeProfile.bio } : { bio_pro: activeProfile.bio }),
     }).eq('id', supabaseProfile.id)
 
-    // 2. Supprime les anciens liens
-    await supabase.from('links').delete().eq('profile_id', supabaseProfile.id)
+    // 2. Supprime les anciens liens du mode actif uniquement
+    await supabase.from('links').delete()
+      .eq('profile_id', supabaseProfile.id)
+      .eq('mode', activeMode)
 
-    // 3. Insère les nouveaux liens (uniquement ceux activés)
+    // 3. Insère les nouveaux liens du mode actif
     const linksToSave = activeProfile.links
       .filter(l => l.enabled)
       .map((l, i) => ({
@@ -157,6 +142,7 @@ export function ProfileEditor({ onBack, profile: supabaseProfile }: ProfileEdito
         title: l.name,
         url: l.handle,
         icon: l.id,
+        mode: activeMode,
         order: i,
       }))
 
