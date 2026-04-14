@@ -101,6 +101,7 @@ function App() {
             profile={profile}
             onBack={() => setCurrentView('preview')}
             onUpdated={fetchProfile}
+            onReconfigure={() => { handleReconfigure(); setCurrentView('setup') }}
           />
         ) : (
           <ProfileEditor

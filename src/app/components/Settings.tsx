@@ -1,40 +1,41 @@
 import { useState } from 'react'
-import { ChevronLeft, Loader2 } from 'lucide-react'
+import { ChevronLeft, Loader2, Wifi } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import type { SupabaseProfile } from '../App'
 
 interface SettingsProps {
   profile: SupabaseProfile
   onBack: () => void
-  onUpdated: () => void
+  onUpdated: () => Promise<void>
+  onReconfigure: () => void
 }
 
-export function Settings({ profile, onBack, onUpdated }: SettingsProps) {
-  const [username, setUsername]         = useState(profile.username)
-  const [displayName, setDisplayName]   = useState(profile.display_name)
-  const [loading, setLoading]           = useState(false)
-  const [error, setError]               = useState('')
-  const [success, setSuccess]           = useState(false)
+export function Settings({ profile, onBack, onUpdated, onReconfigure }: SettingsProps) {
+  const [username, setUsername]       = useState(profile.username)
+  const [displayName, setDisplayName] = useState(profile.display_name)
+  const [loading, setLoading]         = useState(false)
+  const [error, setError]             = useState('')
+  const [saved, setSaved]             = useState(false)
+  const [usernameChanged, setUsernameChanged] = useState(false)
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError('')
-    setSuccess(false)
+    setSaved(false)
 
-    const cleanUsername = username.toLowerCase().replace(/[^a-z0-9_]/g, '')
-    if (cleanUsername.length < 3) {
+    const clean = username.toLowerCase().replace(/[^a-z0-9_]/g, '')
+    if (clean.length < 3) {
       setError('Le nom d\'utilisateur doit faire au moins 3 caractères.')
       setLoading(false)
       return
     }
 
-    // Vérifie si le nouveau username est déjà pris (par quelqu'un d'autre)
-    if (cleanUsername !== profile.username) {
+    if (clean !== profile.username) {
       const { data: existing } = await supabase
         .from('profiles')
         .select('id')
-        .eq('username', cleanUsername)
+        .eq('username', clean)
         .maybeSingle()
 
       if (existing) {
@@ -46,17 +47,18 @@ export function Settings({ profile, onBack, onUpdated }: SettingsProps) {
 
     const { error: updateError } = await supabase
       .from('profiles')
-      .update({ username: cleanUsername, display_name: displayName || cleanUsername })
+      .update({ username: clean, display_name: displayName || clean })
       .eq('id', profile.id)
 
     if (updateError) {
       setError(updateError.message)
-    } else {
-      setSuccess(true)
-      onUpdated()
-      setTimeout(onBack, 1000)
+      setLoading(false)
+      return
     }
 
+    await onUpdated()
+    setSaved(true)
+    setUsernameChanged(clean !== profile.username)
     setLoading(false)
   }
 
@@ -118,7 +120,6 @@ export function Settings({ profile, onBack, onUpdated }: SettingsProps) {
             </div>
 
             {error && <p className="text-sm text-red-400">{error}</p>}
-            {success && <p className="text-sm text-tap-success">Modifications enregistrées !</p>}
 
             <button
               type="submit"
@@ -131,16 +132,26 @@ export function Settings({ profile, onBack, onUpdated }: SettingsProps) {
           </form>
         </section>
 
-        {/* Compte */}
-        <section className="space-y-2">
-          <p className="text-xs font-medium text-tap-text-3 uppercase tracking-widest px-1">Compte</p>
-          <div className="bg-tap-surface rounded-2xl border border-tap-border divide-y divide-tap-border">
-            <div className="px-5 py-4">
-              <p className="text-xs text-tap-text-3 mb-0.5">Email</p>
-              <p className="text-sm text-tap-text-1">{profile.user_id ? '—' : '—'}</p>
-            </div>
+        {/* Alerte reconfigurer bracelet si username changé */}
+        {saved && usernameChanged && (
+          <div className="bg-tap-surface rounded-2xl border border-tap-border p-5 space-y-3">
+            <p className="text-sm text-tap-text-1 font-medium">Ton username a changé</p>
+            <p className="text-xs text-tap-text-2">
+              Ton lien NFC pointe encore vers l'ancienne URL. Reprogramme ton bracelet pour qu'il fonctionne.
+            </p>
+            <button
+              onClick={onReconfigure}
+              className="w-full h-10 rounded-xl bg-tap-text-1 text-black text-sm font-semibold flex items-center justify-center gap-2 transition-all active:scale-95"
+            >
+              <Wifi size={15} />
+              Reconfigurer le bracelet
+            </button>
           </div>
-        </section>
+        )}
+
+        {saved && !usernameChanged && (
+          <p className="text-sm text-center text-tap-success">Modifications enregistrées !</p>
+        )}
 
         {/* Déconnexion */}
         <button
