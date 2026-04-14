@@ -15,7 +15,7 @@ export function BraceletSetup({ onComplete, onSkip, username }: BraceletSetupPro
   const [errorMsg, setErrorMsg]     = useState('')
   const [nfcSupported, setNfcSupported] = useState(true)
 
-  const profileUrl = `${window.location.origin}/p/${username}`
+  const profileUrl = `${window.location.origin}/p/${username.trim()}`
 
   useEffect(() => {
     if (!('NDEFReader' in window)) setNfcSupported(false)

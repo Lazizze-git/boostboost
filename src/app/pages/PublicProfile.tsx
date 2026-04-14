@@ -54,7 +54,7 @@ export function PublicProfile() {
     const { data: profileData } = await supabase
       .from('profiles')
       .select('*')
-      .eq('username', username)
+      .eq('username', (username ?? '').trim())
       .maybeSingle()
 
     if (!profileData) {
