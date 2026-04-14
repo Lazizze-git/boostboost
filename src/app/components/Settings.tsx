@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ChevronLeft, Loader2, Wifi } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import type { SupabaseProfile } from '../App'
@@ -17,6 +17,28 @@ export function Settings({ profile, onBack, onUpdated, onReconfigure }: Settings
   const [error, setError]             = useState('')
   const [saved, setSaved]             = useState(false)
   const [usernameChanged, setUsernameChanged] = useState(false)
+  const [linkedTapId, setLinkedTapId] = useState<string | null>(null)
+  const [unlinking, setUnlinking]     = useState(false)
+
+  useEffect(() => {
+    supabase
+      .from('bracelets')
+      .select('tap_id')
+      .eq('profile_id', profile.id)
+      .maybeSingle()
+      .then(({ data }) => setLinkedTapId(data?.tap_id ?? null))
+  }, [profile.id])
+
+  const handleUnlink = async () => {
+    if (!linkedTapId) return
+    setUnlinking(true)
+    await supabase
+      .from('bracelets')
+      .update({ profile_id: null, linked_at: null })
+      .eq('tap_id', linkedTapId)
+    setLinkedTapId(null)
+    setUnlinking(false)
+  }
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -152,6 +174,31 @@ export function Settings({ profile, onBack, onUpdated, onReconfigure }: Settings
         {saved && !usernameChanged && (
           <p className="text-sm text-center text-tap-success">Modifications enregistrées !</p>
         )}
+
+        {/* Bracelet */}
+        <section className="space-y-2">
+          <p className="text-xs font-medium text-tap-text-3 uppercase tracking-widest px-1">Bracelet</p>
+          <div className="bg-tap-surface rounded-2xl border border-tap-border p-5 space-y-3">
+            {linkedTapId ? (
+              <>
+                <div>
+                  <p className="text-sm font-medium text-tap-text-1">Bracelet lié</p>
+                  <p className="text-xs text-tap-text-3 font-mono mt-0.5">{linkedTapId}</p>
+                </div>
+                <button
+                  onClick={handleUnlink}
+                  disabled={unlinking}
+                  className="w-full h-10 rounded-xl bg-tap-bg border border-tap-border text-red-400 text-sm font-semibold flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-40"
+                >
+                  {unlinking && <Loader2 size={14} className="animate-spin" />}
+                  Délier ce bracelet
+                </button>
+              </>
+            ) : (
+              <p className="text-sm text-tap-text-3">Aucun bracelet lié à ce compte.</p>
+            )}
+          </div>
+        </section>
 
         {/* Déconnexion */}
         <button
