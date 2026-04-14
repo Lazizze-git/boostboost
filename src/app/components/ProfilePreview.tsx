@@ -99,7 +99,7 @@ export function ProfilePreview({ profile, onEdit, onReconfigure }: ProfilePrevie
             Profil TAP
           </p>
           <h1 className="text-[2.6rem] font-bold text-tap-text-1 leading-tight tracking-tight">
-            Salut,<br />{profile.display_name.split(' ')[0]} 👋
+            Salut,<br />{profile.display_name.split(' ')[0]}
           </h1>
         </header>
 
@@ -112,13 +112,12 @@ export function ProfilePreview({ profile, onEdit, onReconfigure }: ProfilePrevie
             <button
               key={mode}
               onClick={() => setActiveMode(mode)}
-              className={`flex-shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-medium transition-all duration-200 active:scale-95 ${
+              className={`flex-shrink-0 px-4 py-2.5 rounded-2xl text-sm font-medium transition-all duration-200 active:scale-95 ${
                 activeMode === mode
-                  ? 'bg-tap-text-1 text-white'
+                  ? 'bg-tap-text-1 text-black'
                   : 'bg-tap-surface text-tap-text-2 border border-tap-border hover:-translate-y-0.5'
               }`}
             >
-              <span>{MODES[mode].emoji}</span>
               {mode}
             </button>
           ))}
@@ -133,10 +132,10 @@ export function ProfilePreview({ profile, onEdit, onReconfigure }: ProfilePrevie
             {/* Identity */}
             <div className="flex items-start gap-4">
               <div
-                className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0"
-                style={{ backgroundColor: `${config.color}18` }}
+                className="w-16 h-16 rounded-2xl flex items-center justify-center text-xl font-bold flex-shrink-0"
+                style={{ backgroundColor: `${config.color}18`, color: config.color }}
               >
-                {config.emoji}
+                {profile.display_name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)}
               </div>
               <div className="flex-1 min-w-0">
                 <h2 className="text-xl font-bold text-tap-text-1 tracking-tight mb-1">
