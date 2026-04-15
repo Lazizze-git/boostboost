@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import {
-  ChevronLeft, Plus, Instagram, Linkedin, Music, Mail,
-  MessageCircle, Globe, Trash2, Sparkles, Loader2
+  ChevronLeft, Instagram, Linkedin, Music, Mail,
+  MessageCircle, Globe, Sparkles, Loader2
 } from 'lucide-react'
 import { Switch } from '../components/ui/switch'
 import { supabase } from '../../lib/supabase'
@@ -14,11 +14,6 @@ interface ProfileEditorProps {
 }
 
 type Mode = 'Soirée' | 'Pro'
-
-interface Prompt {
-  question: string
-  answer: string
-}
 
 interface Link {
   id: string
@@ -33,34 +28,13 @@ interface ModeProfile {
   emoji: string
   color: string
   bio: string
-  photos: string[]
-  prompts: Prompt[]
   links: Link[]
 }
-
-const AVAILABLE_PROMPTS = [
-  'Mon truc préféré du moment 🔥',
-  'Ce qui me rend unique ✨',
-  'Mon spot secret 📍',
-  'Ma passion secrète 💫',
-  'Ce que je cherche 🎯',
-  'Mon meilleur conseil 💡',
-  'Je suis fier(e) de 🏆',
-  'Mon défi actuel 🚀',
-]
 
 const DEFAULT_PROFILES: Record<Mode, ModeProfile> = {
   'Soirée': {
     emoji: '🎉', color: '#C8506A',
     bio: 'DJ le weekend, dev la semaine',
-    photos: [
-      'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400',
-      'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=400',
-    ],
-    prompts: [
-      { question: 'Mon truc préféré du moment 🔥', answer: 'Mixer des sets électro dans les bars underground' },
-      { question: 'Ce qui me rend unique ✨', answer: 'Je code le jour, je mixe la nuit 🎧' },
-    ],
     links: [
       { id: 'instagram', name: 'Instagram', icon: Instagram,     color: '#E1306C', handle: '@julien.moreau',       enabled: true },
       { id: 'snapchat',  name: 'Snapchat',  icon: MessageCircle, color: '#FFAA00', handle: 'julienm',              enabled: true },
@@ -70,10 +44,6 @@ const DEFAULT_PROFILES: Record<Mode, ModeProfile> = {
   'Pro': {
     emoji: '💼', color: '#3A6DBF',
     bio: 'Full-stack developer · React & Node.js',
-    photos: ['https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400'],
-    prompts: [
-      { question: 'Ce que je cherche 🎯', answer: 'Collaborations tech et opportunités de networking' },
-    ],
     links: [
       { id: 'linkedin',  name: 'LinkedIn',  icon: Linkedin,      color: '#0077B5', handle: 'julien-moreau',        enabled: true },
       { id: 'portfolio', name: 'Portfolio', icon: Globe,         color: '#6A4AB8', handle: 'julienmoreau.dev',     enabled: true },
@@ -123,18 +93,15 @@ export function ProfileEditor({ onBack, profile: supabaseProfile }: ProfileEdito
     setSaving(true)
     const activeProfile = profiles[activeMode]
 
-    // 1. Met à jour le profil
     await supabase.from('profiles').update({
       display_name: userName,
       ...(activeMode === 'Soirée' ? { bio_soiree: activeProfile.bio } : { bio_pro: activeProfile.bio }),
     }).eq('id', supabaseProfile.id)
 
-    // 2. Supprime les anciens liens du mode actif uniquement
     await supabase.from('links').delete()
       .eq('profile_id', supabaseProfile.id)
       .eq('mode', activeMode)
 
-    // 3. Insère les nouveaux liens du mode actif
     const linksToSave = activeProfile.links
       .filter(l => l.enabled)
       .map((l, i) => ({
@@ -161,21 +128,6 @@ export function ProfileEditor({ onBack, profile: supabaseProfile }: ProfileEdito
       ...prev,
       [activeMode]: { ...prev[activeMode], [key]: value },
     }))
-  }
-
-  const addPrompt = () => {
-    if (profile.prompts.length >= 5) return
-    const newPrompts: Prompt[] = [...profile.prompts, { question: AVAILABLE_PROMPTS[0], answer: '' }]
-    updateProfile('prompts', newPrompts)
-  }
-
-  const updatePrompt = (index: number, field: keyof Prompt, value: string) => {
-    const updated = profile.prompts.map((p, i) => (i === index ? { ...p, [field]: value } : p))
-    updateProfile('prompts', updated)
-  }
-
-  const removePrompt = (index: number) => {
-    updateProfile('prompts', profile.prompts.filter((_, i) => i !== index))
   }
 
   const toggleLink = (id: string) => {
@@ -256,56 +208,6 @@ export function ProfileEditor({ onBack, profile: supabaseProfile }: ProfileEdito
                 className="w-full bg-transparent border-0 text-sm text-tap-text-2 placeholder:text-tap-text-3 outline-none resize-none leading-relaxed"
               />
             </div>
-          </div>
-        </section>
-
-
-        {/* Prompts */}
-        <section className="space-y-3">
-          <SectionLabel icon={<Sparkles size={13} />} label={`Prompts · ${profile.prompts.length}/5`} />
-          <div className="space-y-3">
-            {profile.prompts.map((prompt, index) => (
-              <div
-                key={index}
-                className="bg-tap-surface rounded-2xl border border-tap-border p-5 space-y-3 relative overflow-hidden"
-              >
-                <div className="absolute left-0 top-0 bottom-0 w-0.5" style={{ backgroundColor: profile.color }} />
-                <div className="flex items-start justify-between gap-3 pl-3">
-                  <select
-                    value={prompt.question}
-                    onChange={(e) => updatePrompt(index, 'question', e.target.value)}
-                    className="flex-1 bg-transparent text-sm font-semibold text-tap-text-1 outline-none cursor-pointer"
-                  >
-                    {AVAILABLE_PROMPTS.map((q) => (
-                      <option key={q} value={q}>{q}</option>
-                    ))}
-                  </select>
-                  <button
-                    onClick={() => removePrompt(index)}
-                    className="w-7 h-7 rounded-lg bg-tap-bg flex items-center justify-center text-tap-text-3 hover:text-tap-text-1 transition-colors flex-shrink-0"
-                  >
-                    <Trash2 size={13} />
-                  </button>
-                </div>
-                <textarea
-                  value={prompt.answer}
-                  onChange={(e) => updatePrompt(index, 'answer', e.target.value)}
-                  placeholder="Ta réponse ici..."
-                  rows={2}
-                  className="w-full bg-tap-bg rounded-xl px-3 py-2.5 text-sm text-tap-text-2 placeholder:text-tap-text-3 outline-none resize-none border border-tap-border focus:border-tap-text-2 transition-colors leading-relaxed"
-                />
-              </div>
-            ))}
-
-            {profile.prompts.length < 5 && (
-              <button
-                onClick={addPrompt}
-                className="w-full py-4 rounded-2xl border-2 border-dashed border-tap-border flex items-center justify-center gap-2 text-sm font-medium text-tap-text-2 transition-all hover:border-tap-text-2 hover:text-tap-text-1"
-              >
-                <Plus size={16} />
-                Ajouter un prompt
-              </button>
-            )}
           </div>
         </section>
 
