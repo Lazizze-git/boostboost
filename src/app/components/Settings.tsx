@@ -1,16 +1,15 @@
 import { useState, useEffect } from 'react'
-import { ChevronLeft, Loader2, Wifi } from 'lucide-react'
+import { Loader2, Wifi, LogOut, Link2Off } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import type { SupabaseProfile } from '../App'
 
 interface SettingsProps {
   profile: SupabaseProfile
-  onBack: () => void
-  onUpdated: () => Promise<void>
+  onUpdated: () => Promise<SupabaseProfile | undefined>
   onReconfigure: () => void
 }
 
-export function Settings({ profile, onBack, onUpdated, onReconfigure }: SettingsProps) {
+export function Settings({ profile, onUpdated, onReconfigure }: SettingsProps) {
   const [username, setUsername]       = useState(profile.username)
   const [displayName, setDisplayName] = useState(profile.display_name)
   const [loading, setLoading]         = useState(false)
@@ -48,7 +47,7 @@ export function Settings({ profile, onBack, onUpdated, onReconfigure }: Settings
 
     const clean = username.toLowerCase().replace(/[^a-z0-9_]/g, '')
     if (clean.length < 3) {
-      setError('Le nom d\'utilisateur doit faire au moins 3 caractères.')
+      setError("Le nom d'utilisateur doit faire au moins 3 caractères.")
       setLoading(false)
       return
     }
@@ -89,28 +88,29 @@ export function Settings({ profile, onBack, onUpdated, onReconfigure }: Settings
   }
 
   return (
-    <div className="min-h-screen bg-tap-bg">
-      {/* Header */}
-      <div className="sticky top-0 z-20 bg-tap-bg/90 backdrop-blur-md border-b border-tap-border px-5 pt-12 pb-4 space-y-4">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-1.5 text-sm text-tap-text-2 transition-all hover:text-tap-text-1 -ml-1"
-        >
-          <ChevronLeft size={16} />
-          Retour
-        </button>
-        <h1 className="text-2xl font-bold text-tap-text-1 tracking-tight">Paramètres</h1>
+    <div className="min-h-screen bg-[#F5F4F0]">
+
+      {/* ─── Header ─── */}
+      <div className="px-5 pt-14 pb-6">
+        <p className="text-[11px] font-bold text-[rgba(28,20,16,0.35)] uppercase tracking-[0.20em] mb-1">
+          Compte
+        </p>
+        <h1 className="text-[2rem] font-black text-[#1C1410] tracking-tight leading-tight">
+          Réglages
+        </h1>
       </div>
 
-      <div className="px-5 pt-6 pb-16 space-y-6 animate-fade-up">
+      <div className="px-5 pb-32 space-y-5">
 
-        {/* Profil */}
+        {/* ─── Profil ─── */}
         <section className="space-y-2">
-          <p className="text-xs font-medium text-tap-text-3 uppercase tracking-widest px-1">Profil</p>
-          <form onSubmit={handleSave} className="bg-tap-surface rounded-2xl border border-tap-border p-5 space-y-4">
+          <p className="text-[11px] font-bold text-[rgba(28,20,16,0.35)] uppercase tracking-[0.20em] px-0.5">
+            Profil public
+          </p>
+          <form onSubmit={handleSave} className="bg-white rounded-2xl border border-[rgba(28,20,16,0.07)] overflow-hidden divide-y divide-[rgba(28,20,16,0.06)]">
 
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-tap-text-3 uppercase tracking-widest">
+            <div className="px-4 py-4 space-y-1">
+              <label className="text-[11px] font-bold text-[rgba(28,20,16,0.35)] uppercase tracking-[0.15em]">
                 Nom d'affichage
               </label>
               <input
@@ -118,52 +118,59 @@ export function Settings({ profile, onBack, onUpdated, onReconfigure }: Settings
                 value={displayName}
                 onChange={e => setDisplayName(e.target.value)}
                 placeholder="Ton nom"
-                className="w-full bg-tap-bg border border-tap-border rounded-xl px-3 py-2.5 text-sm text-tap-text-1 outline-none focus:border-tap-text-2 transition-colors placeholder:text-tap-text-3"
+                className="w-full bg-transparent text-sm font-semibold text-[#1C1410] outline-none placeholder:text-[rgba(28,20,16,0.25)] mt-1"
               />
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-tap-text-3 uppercase tracking-widest">
+            <div className="px-4 py-4 space-y-1">
+              <label className="text-[11px] font-bold text-[rgba(28,20,16,0.35)] uppercase tracking-[0.15em]">
                 Nom d'utilisateur
               </label>
-              <div className="flex items-center bg-tap-bg border border-tap-border rounded-xl px-3 py-2.5 gap-1">
-                <span className="text-tap-text-3 text-sm">@</span>
+              <div className="flex items-center gap-1 mt-1">
+                <span className="text-sm text-[rgba(28,20,16,0.30)]">@</span>
                 <input
                   type="text"
                   value={username}
                   onChange={e => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
                   placeholder="username"
-                  className="flex-1 bg-transparent text-sm text-tap-text-1 outline-none placeholder:text-tap-text-3"
+                  className="flex-1 bg-transparent text-sm font-semibold text-[#1C1410] outline-none placeholder:text-[rgba(28,20,16,0.25)]"
                 />
               </div>
-              <p className="text-xs text-tap-text-3 px-1">
-                Ton profil public : <span className="text-tap-text-2 font-mono">/p/{username || 'username'}</span>
+              <p className="text-[11px] text-[rgba(28,20,16,0.30)] mt-1">
+                Profil public :{' '}
+                <span className="font-mono">/p/{username || 'username'}</span>
               </p>
             </div>
 
-            {error && <p className="text-sm text-red-400">{error}</p>}
+            {error && (
+              <div className="px-4 py-3">
+                <p className="text-sm text-red-500">{error}</p>
+              </div>
+            )}
 
-            <button
-              type="submit"
-              disabled={loading || username.length < 3}
-              className="w-full h-12 rounded-xl bg-tap-text-1 text-black text-sm font-semibold transition-all duration-200 hover:-translate-y-0.5 active:scale-95 disabled:opacity-40 flex items-center justify-center gap-2"
-            >
-              {loading && <Loader2 size={16} className="animate-spin" />}
-              Enregistrer
-            </button>
+            <div className="px-4 py-4">
+              <button
+                type="submit"
+                disabled={loading || username.length < 3}
+                className="w-full h-12 rounded-full bg-[#1C1410] text-white text-sm font-semibold transition-all duration-200 active:scale-95 disabled:opacity-40 flex items-center justify-center gap-2"
+              >
+                {loading && <Loader2 size={16} className="animate-spin" />}
+                {loading ? 'Enregistrement…' : 'Enregistrer les modifications'}
+              </button>
+            </div>
           </form>
         </section>
 
-        {/* Alerte reconfigurer bracelet si username changé */}
+        {/* ─── Alerte username changé ─── */}
         {saved && usernameChanged && (
-          <div className="bg-tap-surface rounded-2xl border border-tap-border p-5 space-y-3">
-            <p className="text-sm text-tap-text-1 font-medium">Ton username a changé</p>
-            <p className="text-xs text-tap-text-2">
+          <div className="bg-white rounded-2xl border border-[rgba(28,20,16,0.07)] p-5 space-y-3">
+            <p className="text-sm font-bold text-[#1C1410]">Ton username a changé</p>
+            <p className="text-sm text-[rgba(28,20,16,0.50)] leading-relaxed">
               Ton lien NFC pointe encore vers l'ancienne URL. Reprogramme ton bracelet pour qu'il fonctionne.
             </p>
             <button
               onClick={onReconfigure}
-              className="w-full h-10 rounded-xl bg-tap-text-1 text-black text-sm font-semibold flex items-center justify-center gap-2 transition-all active:scale-95"
+              className="w-full h-11 rounded-full bg-[#1C1410] text-white text-sm font-semibold flex items-center justify-center gap-2 transition-all active:scale-95"
             >
               <Wifi size={15} />
               Reconfigurer le bracelet
@@ -172,39 +179,53 @@ export function Settings({ profile, onBack, onUpdated, onReconfigure }: Settings
         )}
 
         {saved && !usernameChanged && (
-          <p className="text-sm text-center text-tap-success">Modifications enregistrées !</p>
+          <p className="text-sm text-center text-[#2D8A5A] font-medium">Modifications enregistrées !</p>
         )}
 
-        {/* Bracelet */}
+        {/* ─── Bracelet ─── */}
         <section className="space-y-2">
-          <p className="text-xs font-medium text-tap-text-3 uppercase tracking-widest px-1">Bracelet</p>
-          <div className="bg-tap-surface rounded-2xl border border-tap-border p-5 space-y-3">
+          <p className="text-[11px] font-bold text-[rgba(28,20,16,0.35)] uppercase tracking-[0.20em] px-0.5">
+            Bracelet NFC
+          </p>
+          <div className="bg-white rounded-2xl border border-[rgba(28,20,16,0.07)] overflow-hidden">
             {linkedTapId ? (
-              <>
-                <div>
-                  <p className="text-sm font-medium text-tap-text-1">Bracelet lié</p>
-                  <p className="text-xs text-tap-text-3 font-mono mt-0.5">{linkedTapId}</p>
+              <div className="divide-y divide-[rgba(28,20,16,0.06)]">
+                <div className="px-4 py-4">
+                  <p className="text-sm font-semibold text-[#1C1410]">Bracelet lié</p>
+                  <p className="text-xs text-[rgba(28,20,16,0.35)] font-mono mt-1">{linkedTapId}</p>
                 </div>
-                <button
-                  onClick={handleUnlink}
-                  disabled={unlinking}
-                  className="w-full h-10 rounded-xl bg-tap-bg border border-tap-border text-red-400 text-sm font-semibold flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-40"
-                >
-                  {unlinking && <Loader2 size={14} className="animate-spin" />}
-                  Délier ce bracelet
-                </button>
-              </>
+                <div className="px-4 py-4 flex gap-2">
+                  <button
+                    onClick={handleUnlink}
+                    disabled={unlinking}
+                    className="flex-1 h-11 rounded-full border border-[rgba(28,20,16,0.12)] text-red-500 text-sm font-semibold flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-40 hover:border-red-200"
+                  >
+                    {unlinking ? <Loader2 size={14} className="animate-spin" /> : <Link2Off size={14} />}
+                    Délier
+                  </button>
+                  <button
+                    onClick={onReconfigure}
+                    className="flex-1 h-11 rounded-full bg-[rgba(28,20,16,0.06)] text-[rgba(28,20,16,0.70)] text-sm font-semibold flex items-center justify-center gap-2 transition-all active:scale-95 hover:bg-[rgba(28,20,16,0.10)]"
+                  >
+                    <Wifi size={14} />
+                    Reconfigurer
+                  </button>
+                </div>
+              </div>
             ) : (
-              <p className="text-sm text-tap-text-3">Aucun bracelet lié à ce compte.</p>
+              <div className="px-4 py-5">
+                <p className="text-sm text-[rgba(28,20,16,0.40)]">Aucun bracelet lié à ce compte.</p>
+              </div>
             )}
           </div>
         </section>
 
-        {/* Déconnexion */}
+        {/* ─── Déconnexion ─── */}
         <button
           onClick={handleSignOut}
-          className="w-full h-12 rounded-xl bg-tap-surface border border-tap-border text-red-400 text-sm font-semibold transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
+          className="w-full h-12 rounded-full border border-[rgba(28,20,16,0.12)] bg-white text-red-500 text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 active:scale-95 hover:border-red-200"
         >
+          <LogOut size={15} />
           Se déconnecter
         </button>
 

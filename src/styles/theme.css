@@ -3,48 +3,49 @@
 :root {
   --font-size: 16px;
 
-  /* ─── TAP × StudyFlow Design System ────────────── */
-  --tap-bg:        #000000;
-  --tap-surface:   #111111;
-  --tap-elevated:  #1A1A1A;
-  --tap-text-1:    #FFFFFF;
-  --tap-text-2:    rgba(255,255,255,0.45);
-  --tap-text-3:    rgba(255,255,255,0.20);
-  --tap-line:      rgba(255,255,255,0.08);
-  --tap-accent:    #FFFFFF;
-  --tap-green:     #22C55E;
-  --tap-collab:    #00FF57;
+  /* ─── TAP Design System — Warm Swiss Light ─────── */
+  --tap-bg:        #F5F4F0;
+  --tap-surface:   #FFFFFF;
+  --tap-elevated:  #F2EDE7;
+  --tap-text-1:    #1C1410;
+  --tap-text-2:    rgba(28,20,16,0.52);
+  --tap-text-3:    rgba(28,20,16,0.32);
+  --tap-line:      rgba(28,20,16,0.08);
+  --tap-accent:    #1C1410;
+  --tap-green:     #2D8A5A;
+  --tap-collab:    #2D8A5A;
+  --tap-success:   #2D8A5A;
 
-  /* Mode colors — sparingly, max 2 visible at once */
-  --mode-soiree:  #C8506A;
-  --mode-pro:     #3A6DBF;
-  --mode-sport:   #22C55E;
-  --mode-discret: #8B5CF6;
+  /* Mode colors */
+  --mode-soiree:  #FF62D7;
+  --mode-pro:     #2495FF;
+  --mode-sport:   #A6FE5A;
+  --mode-discret: #FFCC00;
 
-  /* ─── shadcn/ui tokens (dark mode) ─────────────── */
-  --background:            #000000;
-  --foreground:            #FFFFFF;
-  --card:                  #111111;
-  --card-foreground:       #FFFFFF;
-  --popover:               #1A1A1A;
-  --popover-foreground:    #FFFFFF;
-  --primary:               #FFFFFF;
-  --primary-foreground:    #000000;
-  --secondary:             #1A1A1A;
-  --secondary-foreground:  #FFFFFF;
-  --muted:                 rgba(255,255,255,0.08);
-  --muted-foreground:      rgba(255,255,255,0.45);
-  --accent:                rgba(255,255,255,0.08);
-  --accent-foreground:     #FFFFFF;
-  --destructive:           #ef4444;
+  /* ─── shadcn/ui tokens ──────────────────────────── */
+  --background:            #F5F4F0;
+  --foreground:            #1C1410;
+  --card:                  #FFFFFF;
+  --card-foreground:       #1C1410;
+  --popover:               #FFFFFF;
+  --popover-foreground:    #1C1410;
+  --primary:               #1C1410;
+  --primary-foreground:    #FFFFFF;
+  --secondary:             #F2EDE7;
+  --secondary-foreground:  #1C1410;
+  --muted:                 rgba(28,20,16,0.06);
+  --muted-foreground:      rgba(28,20,16,0.52);
+  --accent:                rgba(28,20,16,0.06);
+  --accent-foreground:     #1C1410;
+  --destructive:           #C0392B;
   --destructive-foreground:#FFFFFF;
-  --border:                rgba(255,255,255,0.08);
+  --border:                rgba(28,20,16,0.09);
   --input:                 transparent;
-  --input-background:      #1A1A1A;
-  --switch-background:     rgba(255,255,255,0.20);
+  --input-background:      #F2EDE7;
+  --switch-background:     rgba(28,20,16,0.16);
   --font-weight-medium:    500;
   --font-weight-normal:    400;
-  --ring:                  rgba(255,255,255,0.20);
+  --ring:                  rgba(28,20,16,0.16);
   --radius:                0.75rem;
 
   --chart-1: oklch(0.646 0.222 41.116);
@@ -53,14 +54,14 @@
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
 
-  --sidebar:                    #111111;
-  --sidebar-foreground:         #FFFFFF;
-  --sidebar-primary:            #FFFFFF;
-  --sidebar-primary-foreground: #000000;
-  --sidebar-accent:             rgba(255,255,255,0.08);
-  --sidebar-accent-foreground:  #FFFFFF;
-  --sidebar-border:             rgba(255,255,255,0.08);
-  --sidebar-ring:               rgba(255,255,255,0.20);
+  --sidebar:                    #FFFFFF;
+  --sidebar-foreground:         #1C1410;
+  --sidebar-primary:            #1C1410;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent:             rgba(28,20,16,0.06);
+  --sidebar-accent-foreground:  #1C1410;
+  --sidebar-border:             rgba(28,20,16,0.09);
+  --sidebar-ring:               rgba(28,20,16,0.16);
 }
 
 @theme inline {
@@ -161,8 +162,14 @@
   50%       { opacity: 1;   transform: scale(1.25); }
 }
 
-.animate-fade-up  { animation: fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.animate-fade-up  { animation: fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both; }
 .animate-fade-in  { animation: fade-in 0.3s ease-out both; }
 .animate-spin     { animation: spin 1s linear infinite; }
 .animate-ping-ring{ animation: ping-ring 1.5s cubic-bezier(0, 0, 0.2, 1) infinite; }
 .animate-pulse-dot{ animation: pulse-dot 2s ease-in-out infinite; }
+.animate-slide-up { animation: slide-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(32px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

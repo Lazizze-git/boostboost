@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import type { Session } from '@supabase/supabase-js'
+import { Home, Layers, Settings as SettingsIcon } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { Auth } from './components/Auth'
 import { ProfileSetup } from './components/ProfileSetup'
@@ -20,7 +21,14 @@ export interface SupabaseProfile {
   avatar_url: string | null
 }
 
-type View = 'setup' | 'preview' | 'editor' | 'settings'
+type Tab = 'preview' | 'editor' | 'settings'
+type View = Tab | 'setup'
+
+const TABS: { id: Tab; label: string; Icon: typeof Home }[] = [
+  { id: 'preview',  label: 'Accueil', Icon: Home },
+  { id: 'editor',   label: 'Modes',   Icon: Layers },
+  { id: 'settings', label: 'Réglages', Icon: SettingsIcon },
+]
 
 function App() {
   const [session, setSession]         = useState<Session | null>(null)
@@ -28,7 +36,6 @@ function App() {
   const [authLoading, setAuthLoading] = useState(true)
   const [currentView, setCurrentView] = useState<View>('preview')
 
-  // Auth state
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
@@ -43,7 +50,6 @@ function App() {
     return () => subscription.unsubscribe()
   }, [])
 
-  // Charge le profil quand la session est disponible
   useEffect(() => {
     if (!session) return
     fetchProfile()
@@ -60,7 +66,6 @@ function App() {
     return data
   }
 
-  // Lie un bracelet en attente après connexion
   useEffect(() => {
     if (!session || !profile) return
     const pendingTapId = localStorage.getItem('tap-pending-link')
@@ -73,28 +78,27 @@ function App() {
       .then(() => {})
   }, [session, profile])
 
-
-  // Chargement initial
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-tap-bg flex items-center justify-center">
-        <div className="w-8 h-8 rounded-full border-2 border-tap-text-3 border-t-tap-text-1 animate-spin" />
+      <div className="min-h-screen bg-[#F5F4F0] flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full border-2 border-[rgba(28,20,16,0.12)] border-t-[#1C1410] animate-spin" />
       </div>
     )
   }
 
-  // Non connecté
   if (!session) return <Auth />
 
-  // Connecté mais pas de profil encore
   if (!profile) {
     return <ProfileSetup user={session.user} onComplete={fetchProfile} />
   }
 
-  // Connecté + profil OK
+  const isTabView = currentView !== 'setup'
+
   return (
-    <div className="min-h-screen bg-tap-bg font-sans">
-      <div className="mx-auto" style={{ maxWidth: '430px' }}>
+    <div className="min-h-screen bg-[#F5F4F0] font-sans">
+      <div className="mx-auto relative" style={{ maxWidth: '430px' }}>
+
+        {/* ─── Screens ─── */}
         {currentView === 'setup' ? (
           <BraceletSetup
             onComplete={() => setCurrentView('preview')}
@@ -102,23 +106,54 @@ function App() {
             username={profile.username}
           />
         ) : currentView === 'preview' ? (
-          <ProfilePreview
+          <ProfilePreview profile={profile} />
+        ) : currentView === 'editor' ? (
+          <ProfileEditor
             profile={profile}
-            onEdit={() => setCurrentView('editor')}
-            onSettings={() => setCurrentView('settings')}
+            onSaved={fetchProfile}
           />
-        ) : currentView === 'settings' ? (
+        ) : (
           <Settings
             profile={profile}
-            onBack={() => setCurrentView('preview')}
             onUpdated={fetchProfile}
             onReconfigure={() => setCurrentView('setup')}
           />
-        ) : (
-          <ProfileEditor
-            profile={profile}
-            onBack={() => { fetchProfile(); setCurrentView('preview') }}
-          />
+        )}
+
+        {/* ─── Bottom tab bar ─── */}
+        {isTabView && (
+          <nav
+            className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full flex items-stretch bg-white border-t border-[rgba(28,20,16,0.07)]"
+            style={{
+              maxWidth: '430px',
+              paddingBottom: 'env(safe-area-inset-bottom)',
+              boxShadow: '0 -4px 24px rgba(28,20,16,0.06)',
+            }}
+          >
+            {TABS.map(({ id, label, Icon }) => {
+              const active = currentView === id
+              return (
+                <button
+                  key={id}
+                  onClick={() => setCurrentView(id)}
+                  className="flex-1 flex flex-col items-center justify-center gap-1 py-3 transition-all duration-150 active:scale-95"
+                >
+                  <Icon
+                    size={22}
+                    strokeWidth={active ? 2.2 : 1.8}
+                    className={active ? 'text-[#1C1410]' : 'text-[rgba(28,20,16,0.30)]'}
+                  />
+                  <span
+                    className={`text-[10px] font-semibold tracking-wide transition-colors ${
+                      active ? 'text-[#1C1410]' : 'text-[rgba(28,20,16,0.30)]'
+                    }`}
+                  >
+                    {label}
+                  </span>
+                </button>
+              )
+            })}
+          </nav>
         )}
       </div>
     </div>

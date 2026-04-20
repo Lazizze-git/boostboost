@@ -1,19 +1,22 @@
 import { useState, useEffect } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import {
-  ChevronLeft, Instagram, Linkedin, Music, Mail,
-  MessageCircle, Globe, Sparkles, Loader2
+  Instagram, Linkedin, Music, Mail,
+  MessageCircle, Globe, Loader2, Plus, X
 } from 'lucide-react'
+import { useNavigate } from 'react-router'
 import { Switch } from '../components/ui/switch'
 import { supabase } from '../../lib/supabase'
 import type { SupabaseProfile } from '../App'
 
 interface ProfileEditorProps {
-  onBack: () => void
   profile: SupabaseProfile
+  onSaved: () => Promise<SupabaseProfile | undefined>
 }
 
-type Mode = 'Soirée' | 'Pro'
+type Mode = 'Soirée' | 'Pro' | 'Sport' | 'Discret'
+
+const MODES: Mode[] = ['Soirée', 'Pro', 'Sport', 'Discret']
 
 interface Link {
   id: string
@@ -25,43 +28,54 @@ interface Link {
 }
 
 interface ModeProfile {
-  emoji: string
-  color: string
   bio: string
   links: Link[]
 }
 
-const DEFAULT_PROFILES: Record<Mode, ModeProfile> = {
-  'Soirée': {
-    emoji: '🎉', color: '#C8506A',
-    bio: 'DJ le weekend, dev la semaine',
-    links: [
-      { id: 'instagram', name: 'Instagram', icon: Instagram,     color: '#E1306C', handle: '@julien.moreau',       enabled: true },
-      { id: 'snapchat',  name: 'Snapchat',  icon: MessageCircle, color: '#FFAA00', handle: 'julienm',              enabled: true },
-      { id: 'spotify',   name: 'Spotify',   icon: Music,         color: '#1DB954', handle: 'Julien M',             enabled: true },
-    ],
-  },
-  'Pro': {
-    emoji: '💼', color: '#3A6DBF',
-    bio: 'Full-stack developer · React & Node.js',
-    links: [
-      { id: 'linkedin',  name: 'LinkedIn',  icon: Linkedin,      color: '#0077B5', handle: 'julien-moreau',        enabled: true },
-      { id: 'portfolio', name: 'Portfolio', icon: Globe,         color: '#6A4AB8', handle: 'julienmoreau.dev',     enabled: true },
-      { id: 'email',     name: 'Email',     icon: Mail,          color: '#3A6DBF', handle: 'j.moreau@gmail.com',   enabled: true },
-    ],
-  },
+const ALL_LINKS: Omit<Link, 'handle' | 'enabled'>[] = [
+  { id: 'instagram', name: 'Instagram', icon: Instagram,     color: '#E1306C' },
+  { id: 'snapchat',  name: 'Snapchat',  icon: MessageCircle, color: '#FFAA00' },
+  { id: 'spotify',   name: 'Spotify',   icon: Music,         color: '#1DB954' },
+  { id: 'linkedin',  name: 'LinkedIn',  icon: Linkedin,      color: '#0077B5' },
+  { id: 'portfolio', name: 'Portfolio', icon: Globe,         color: '#6A4AB8' },
+  { id: 'email',     name: 'Email',     icon: Mail,          color: '#3A6DBF' },
+  { id: 'whatsapp',  name: 'WhatsApp',  icon: MessageCircle, color: '#25D366' },
+]
+
+const DEFAULT_LINKS_BY_MODE: Record<Mode, string[]> = {
+  'Soirée':  ['instagram', 'snapchat', 'spotify'],
+  'Pro':     ['linkedin', 'portfolio', 'email'],
+  'Sport':   ['instagram', 'spotify', 'whatsapp'],
+  'Discret': ['instagram', 'linkedin'],
 }
 
-const MODES: Mode[] = ['Soirée', 'Pro']
+function buildDefaultLinks(mode: Mode): Link[] {
+  const defaultIds = DEFAULT_LINKS_BY_MODE[mode]
+  return ALL_LINKS.map(l => ({
+    ...l,
+    handle:  '',
+    enabled: defaultIds.includes(l.id),
+  }))
+}
 
-export function ProfileEditor({ onBack, profile: supabaseProfile }: ProfileEditorProps) {
+function buildDefaultProfiles(): Record<Mode, ModeProfile> {
+  return {
+    'Soirée':  { bio: '', links: buildDefaultLinks('Soirée') },
+    'Pro':     { bio: '', links: buildDefaultLinks('Pro') },
+    'Sport':   { bio: '', links: buildDefaultLinks('Sport') },
+    'Discret': { bio: '', links: buildDefaultLinks('Discret') },
+  }
+}
+
+export function ProfileEditor({ profile: supabaseProfile, onSaved }: ProfileEditorProps) {
+  const navigate = useNavigate()
   const [activeMode, setActiveMode] = useState<Mode>('Soirée')
-  const [userName, setUserName]     = useState(supabaseProfile.display_name)
-  const [profiles, setProfiles]     = useState<Record<Mode, ModeProfile>>(DEFAULT_PROFILES)
+  const [profiles, setProfiles]     = useState<Record<Mode, ModeProfile>>(buildDefaultProfiles())
   const [saving, setSaving]         = useState(false)
+  const [saved, setSaved]           = useState(false)
 
   useEffect(() => {
-    const loadAllLinks = async () => {
+    const load = async () => {
       const { data } = await supabase
         .from('links')
         .select('*')
@@ -73,12 +87,11 @@ export function ProfileEditor({ onBack, profile: supabaseProfile }: ProfileEdito
       setProfiles(prev => {
         const updated = { ...prev }
         for (const mode of MODES) {
-          const modeLinks = allLinks.filter(d => d.mode === mode)
+          const modeLinks = allLinks.filter((d: { mode: string }) => d.mode === mode)
           updated[mode] = {
-            ...prev[mode],
-            bio: (mode === 'Soirée' ? supabaseProfile.bio_soiree : supabaseProfile.bio_pro) || prev[mode].bio,
+            bio: (mode === 'Soirée' ? supabaseProfile.bio_soiree : supabaseProfile.bio_pro) || '',
             links: prev[mode].links.map(link => {
-              const saved = modeLinks.find(d => d.icon === link.id)
+              const saved = modeLinks.find((d: { icon: string; url: string }) => d.icon === link.id)
               return saved ? { ...link, handle: saved.url, enabled: true } : { ...link, enabled: false }
             }),
           }
@@ -86,7 +99,7 @@ export function ProfileEditor({ onBack, profile: supabaseProfile }: ProfileEdito
         return updated
       })
     }
-    loadAllLinks()
+    load()
   }, [supabaseProfile.id])
 
   const handleSave = async () => {
@@ -94,8 +107,8 @@ export function ProfileEditor({ onBack, profile: supabaseProfile }: ProfileEdito
     const activeProfile = profiles[activeMode]
 
     await supabase.from('profiles').update({
-      display_name: userName,
-      ...(activeMode === 'Soirée' ? { bio_soiree: activeProfile.bio } : { bio_pro: activeProfile.bio }),
+      ...(activeMode === 'Soirée' ? { bio_soiree: activeProfile.bio } : {}),
+      ...(activeMode === 'Pro'    ? { bio_pro:    activeProfile.bio } : {}),
     }).eq('id', supabaseProfile.id)
 
     await supabase.from('links').delete()
@@ -103,76 +116,105 @@ export function ProfileEditor({ onBack, profile: supabaseProfile }: ProfileEdito
       .eq('mode', activeMode)
 
     const linksToSave = activeProfile.links
-      .filter(l => l.enabled)
+      .filter(l => l.enabled && l.handle.trim())
       .map((l, i) => ({
         profile_id: supabaseProfile.id,
-        title: l.name,
-        url: l.handle,
-        icon: l.id,
-        mode: activeMode,
-        order: i,
+        title:      l.name,
+        url:        l.handle,
+        icon:       l.id,
+        mode:       activeMode,
+        order:      i,
       }))
 
     if (linksToSave.length > 0) {
       await supabase.from('links').insert(linksToSave)
     }
 
+    await onSaved()
     setSaving(false)
-    onBack()
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2500)
   }
 
-  const profile = profiles[activeMode]
+  const profile      = profiles[activeMode]
+  const initials     = supabaseProfile.display_name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
+  const enabledCount = profile.links.filter(l => l.enabled).length
 
-  const updateProfile = <K extends keyof ModeProfile>(key: K, value: ModeProfile[K]) => {
-    setProfiles(prev => ({
-      ...prev,
-      [activeMode]: { ...prev[activeMode], [key]: value },
-    }))
+  const updateBio = (bio: string) => {
+    setProfiles(prev => ({ ...prev, [activeMode]: { ...prev[activeMode], bio } }))
   }
 
   const toggleLink = (id: string) => {
-    updateProfile('links', profile.links.map(l => l.id === id ? { ...l, enabled: !l.enabled } : l))
+    setProfiles(prev => ({
+      ...prev,
+      [activeMode]: {
+        ...prev[activeMode],
+        links: prev[activeMode].links.map(l => l.id === id ? { ...l, enabled: !l.enabled } : l),
+      },
+    }))
   }
 
-  const updateLinkHandle = (id: string, handle: string) => {
-    updateProfile('links', profile.links.map(l => l.id === id ? { ...l, handle } : l))
+  const updateHandle = (id: string, handle: string) => {
+    setProfiles(prev => ({
+      ...prev,
+      [activeMode]: {
+        ...prev[activeMode],
+        links: prev[activeMode].links.map(l => l.id === id ? { ...l, handle } : l),
+      },
+    }))
   }
 
   return (
-    <div className="min-h-screen bg-tap-bg">
+    <div className="min-h-screen bg-[#F5F4F0]">
 
-      {/* ─── Sticky header ─── */}
-      <div className="sticky top-0 z-20 bg-tap-bg/90 backdrop-blur-md border-b border-tap-border px-5 pt-12 pb-4 space-y-4">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-1.5 text-sm text-tap-text-2 transition-all hover:text-tap-text-1 -ml-1"
-        >
-          <ChevronLeft size={16} />
-          Retour
-        </button>
+      {/* ─── Header ─── */}
+      <div className="sticky top-0 z-20 bg-[#F5F4F0]/95 backdrop-blur-md px-5 pt-12 pb-4 space-y-4">
 
-        <div>
-          <p className="text-xs font-medium text-tap-text-3 uppercase tracking-widest mb-1">
-            Éditeur de profil
-          </p>
-          <h1 className="text-2xl font-bold text-tap-text-1 tracking-tight">
-            Mode {activeMode}
-          </h1>
+        {/* Top row: title + aperçu */}
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-[11px] font-bold text-[rgba(28,20,16,0.35)] uppercase tracking-[0.20em]">
+              Mes modes
+            </p>
+            <h1 className="text-xl font-black text-[#1C1410] tracking-tight mt-0.5">
+              {activeMode}
+            </h1>
+          </div>
+          <button
+            onClick={() => navigate(`/p/${supabaseProfile.username}`)}
+            className="px-4 py-2 rounded-full border border-[rgba(28,20,16,0.15)] text-sm font-semibold text-[rgba(28,20,16,0.60)] hover:border-[rgba(28,20,16,0.30)] transition-colors active:scale-95"
+          >
+            Aperçu
+          </button>
+        </div>
+
+        {/* Profile identity row */}
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-[rgba(28,20,16,0.10)] flex items-center justify-center text-sm font-black text-[rgba(28,20,16,0.40)] flex-shrink-0 select-none">
+            {initials}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-[#1C1410] leading-tight">{supabaseProfile.display_name}</p>
+            <p className="text-xs text-[rgba(28,20,16,0.35)] truncate">
+              {profile.bio || 'Ajouter une bio pour ce mode…'}
+            </p>
+          </div>
+          <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-[rgba(28,20,16,0.06)] flex-shrink-0">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#C95470] animate-pulse-dot" />
+            <span className="text-[10px] font-semibold text-[rgba(28,20,16,0.50)]">{activeMode}</span>
+          </div>
         </div>
 
         {/* Mode tabs */}
-        <div
-          className="flex gap-2 overflow-x-auto pb-1 -mx-5 px-5"
-          style={{ scrollbarWidth: 'none' }}
-        >
-          {MODES.map((mode) => (
+        <div className="flex gap-2 overflow-x-auto -mx-5 px-5 pb-1" style={{ scrollbarWidth: 'none' }}>
+          {MODES.map(mode => (
             <button
               key={mode}
               onClick={() => setActiveMode(mode)}
-              className={`flex-shrink-0 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-200 active:scale-95 ${
+              className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 active:scale-95 ${
                 activeMode === mode
-                  ? 'bg-tap-text-1 text-black'
-                  : 'bg-tap-surface text-tap-text-2 border border-tap-border'
+                  ? 'bg-[#1C1410] text-white'
+                  : 'bg-white border border-[rgba(28,20,16,0.12)] text-[rgba(28,20,16,0.55)]'
               }`}
             >
               {mode}
@@ -181,64 +223,47 @@ export function ProfileEditor({ onBack, profile: supabaseProfile }: ProfileEdito
         </div>
       </div>
 
-      {/* ─── Form ─── */}
-      <div className="px-5 pt-6 pb-32 space-y-8 animate-fade-up">
+      {/* ─── Content ─── */}
+      <div className="px-5 pt-4 pb-36 space-y-5">
 
-        {/* Identity */}
-        <section className="space-y-3">
-          <SectionLabel icon={<Sparkles size={13} />} label="Identité" />
-          <div className="bg-tap-surface rounded-2xl border border-tap-border p-5 space-y-4">
-            <div className="space-y-1">
-              <label className="text-xs text-tap-text-3 font-medium">Nom</label>
-              <input
-                type="text"
-                value={userName}
-                onChange={(e) => setUserName(e.target.value)}
-                placeholder="Ton nom"
-                className="w-full bg-transparent border-0 border-b border-tap-border pb-2 text-xl font-bold text-tap-text-1 placeholder:text-tap-text-3 outline-none focus:border-tap-text-1 transition-colors"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs text-tap-text-3 font-medium">Bio du mode</label>
-              <textarea
-                value={profile.bio}
-                onChange={(e) => updateProfile('bio', e.target.value)}
-                placeholder="Décris-toi dans ce mode..."
-                rows={2}
-                className="w-full bg-transparent border-0 text-sm text-tap-text-2 placeholder:text-tap-text-3 outline-none resize-none leading-relaxed"
-              />
-            </div>
+        {/* ─── Liens visibles ─── */}
+        <section className="space-y-2">
+          <div className="flex items-center justify-between px-0.5">
+            <p className="text-[11px] font-bold text-[rgba(28,20,16,0.35)] uppercase tracking-[0.20em]">
+              Liens visibles
+            </p>
+            <span className="text-[11px] text-[rgba(28,20,16,0.35)]">
+              {enabledCount} actif{enabledCount > 1 ? 's' : ''}
+            </span>
           </div>
-        </section>
 
-        {/* Links */}
-        <section className="space-y-3">
-          <SectionLabel icon={<Globe size={13} />} label="Liens & Réseaux" />
-          <div className="space-y-2">
-            {profile.links.map((link) => {
+          <div className="bg-white rounded-2xl border border-[rgba(28,20,16,0.07)] overflow-hidden divide-y divide-[rgba(28,20,16,0.06)]">
+            {profile.links.map(link => {
               const Icon = link.icon
               return (
                 <div
                   key={link.id}
-                  className={`bg-tap-surface rounded-2xl border border-tap-border p-4 flex items-center gap-3 transition-all duration-200 ${
-                    !link.enabled ? 'opacity-50' : ''
-                  }`}
+                  className={`flex items-center gap-3.5 px-4 py-4 transition-opacity ${!link.enabled ? 'opacity-35' : ''}`}
                 >
                   <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                    style={{ backgroundColor: `${link.color}18` }}
+                    className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                    style={{ backgroundColor: `${link.color}15`, color: link.color }}
                   >
-                    <Icon size={17} style={{ color: link.color }} />
+                    <Icon size={16} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-tap-text-1 mb-1">{link.name}</p>
-                    <input
-                      type="text"
-                      value={link.handle}
-                      onChange={(e) => updateLinkHandle(link.id, e.target.value)}
-                      placeholder="Ton identifiant..."
-                      className="w-full bg-tap-bg border border-tap-border rounded-lg px-2 py-1.5 text-xs text-tap-text-2 outline-none focus:border-tap-text-2 transition-colors placeholder:text-tap-text-3"
-                    />
+                    <p className="text-sm font-semibold text-[#1C1410] leading-tight">{link.name}</p>
+                    {link.enabled ? (
+                      <input
+                        type="text"
+                        value={link.handle}
+                        onChange={e => updateHandle(link.id, e.target.value)}
+                        placeholder="Ton identifiant…"
+                        className="w-full text-xs text-[rgba(28,20,16,0.40)] bg-transparent outline-none placeholder:text-[rgba(28,20,16,0.22)] mt-0.5"
+                      />
+                    ) : (
+                      <p className="text-xs text-[rgba(28,20,16,0.22)] mt-0.5">Non activé</p>
+                    )}
                   </div>
                   <Switch
                     checked={link.enabled}
@@ -249,37 +274,83 @@ export function ProfileEditor({ onBack, profile: supabaseProfile }: ProfileEdito
             })}
           </div>
         </section>
+
+        {/* ─── Bio ─── */}
+        <section className="space-y-2">
+          <p className="text-[11px] font-bold text-[rgba(28,20,16,0.35)] uppercase tracking-[0.20em] px-0.5">
+            Bio du mode
+          </p>
+          <div className="bg-white rounded-2xl border border-[rgba(28,20,16,0.07)] p-4">
+            <textarea
+              value={profile.bio}
+              onChange={e => updateBio(e.target.value)}
+              placeholder={`Décris-toi en mode ${activeMode}…`}
+              rows={3}
+              className="w-full bg-transparent text-sm text-[#1C1410] placeholder:text-[rgba(28,20,16,0.25)] outline-none resize-none leading-relaxed"
+            />
+          </div>
+        </section>
+
+        {/* ─── Photos ─── */}
+        <section className="space-y-2">
+          <div className="flex items-center justify-between px-0.5">
+            <p className="text-[11px] font-bold text-[rgba(28,20,16,0.35)] uppercase tracking-[0.20em]">
+              Photos
+            </p>
+            <p className="text-[11px] text-[rgba(28,20,16,0.35)]">visible sur profil</p>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2">
+            {(['portrait', 'event', 'coffee'] as const).map(label => (
+              <div
+                key={label}
+                className="aspect-square rounded-2xl bg-white border border-[rgba(28,20,16,0.07)] flex flex-col items-center justify-center relative overflow-hidden"
+              >
+                <div
+                  className="absolute inset-0 opacity-[0.03]"
+                  style={{
+                    backgroundImage: 'repeating-linear-gradient(45deg, #1C1410 0, #1C1410 1px, transparent 0, transparent 50%)',
+                    backgroundSize: '12px 12px',
+                  }}
+                />
+                <button className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-[rgba(28,20,16,0.10)] flex items-center justify-center">
+                  <X size={10} className="text-[rgba(28,20,16,0.50)]" />
+                </button>
+                <p className="text-[10px] text-[rgba(28,20,16,0.25)] font-medium relative z-10">{label}</p>
+              </div>
+            ))}
+            <div className="aspect-square rounded-2xl border border-dashed border-[rgba(28,20,16,0.15)] flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-white/60 transition-colors active:scale-95">
+              <Plus size={18} className="text-[rgba(28,20,16,0.25)]" />
+              <p className="text-[10px] text-[rgba(28,20,16,0.30)] font-medium">Ajouter</p>
+            </div>
+          </div>
+          <p className="text-[11px] text-[rgba(28,20,16,0.30)] px-0.5">
+            Max 6 photos · Visible en mode {activeMode}
+          </p>
+        </section>
       </div>
 
-      {/* ─── Fixed save button ─── */}
-      <div className="fixed bottom-0 left-0 right-0 px-5 py-5 bg-tap-bg/90 backdrop-blur-md border-t border-tap-border">
-        <div className="mx-auto" style={{ maxWidth: '430px' }}>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="w-full h-14 rounded-2xl bg-tap-text-1 text-black text-base font-semibold transition-all duration-200 hover:-translate-y-0.5 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
-          >
-            {saving && <Loader2 size={18} className="animate-spin" />}
-            {saving ? 'Enregistrement...' : 'Enregistrer les modifications'}
-          </button>
-        </div>
+      {/* ─── Fixed save button (above tab bar) ─── */}
+      <div
+        className="fixed left-1/2 -translate-x-1/2 w-full bottom-[64px] px-5 py-4 pointer-events-none"
+        style={{
+          maxWidth: '430px',
+          background: 'linear-gradient(to top, #F5F4F0 60%, transparent)',
+        }}
+      >
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="w-full h-[56px] rounded-full text-white text-base font-semibold transition-all duration-200 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 pointer-events-auto"
+          style={{
+            backgroundColor: saved ? '#2D8A5A' : '#1C1410',
+            transition: 'background-color 0.3s ease',
+          }}
+        >
+          {saving && <Loader2 size={18} className="animate-spin" />}
+          {saving ? 'Enregistrement…' : saved ? 'Enregistré ✓' : 'Enregistrer'}
+        </button>
       </div>
-    </div>
-  )
-}
-
-/* ─── Helper component ─── */
-
-interface SectionLabelProps {
-  icon: React.ReactNode
-  label: string
-}
-
-function SectionLabel({ icon, label }: SectionLabelProps) {
-  return (
-    <div className="flex items-center gap-1.5">
-      <span className="text-tap-text-3">{icon}</span>
-      <p className="text-xs font-semibold text-tap-text-3 uppercase tracking-widest">{label}</p>
     </div>
   )
 }

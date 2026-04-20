@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router'
-import { ExternalLink, Instagram, Linkedin, Music, Mail, MessageCircle, Globe, Loader2 } from 'lucide-react'
+import { useParams, useNavigate } from 'react-router'
+import { Instagram, Linkedin, Music, Mail, MessageCircle, Globe, Loader2, UserPlus, Share2, ChevronLeft } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 
 interface Profile {
@@ -22,31 +22,75 @@ interface Link {
 }
 
 const ICON_MAP: Record<string, React.ReactNode> = {
-  instagram:  <Instagram  size={18} />,
-  linkedin:   <Linkedin   size={18} />,
-  spotify:    <Music      size={18} />,
-  email:      <Mail       size={18} />,
-  snapchat:   <MessageCircle size={18} />,
-  whatsapp:   <MessageCircle size={18} />,
-  portfolio:  <Globe      size={18} />,
+  instagram: <Instagram  size={18} />,
+  linkedin:  <Linkedin   size={18} />,
+  spotify:   <Music      size={18} />,
+  email:     <Mail       size={18} />,
+  snapchat:  <MessageCircle size={18} />,
+  whatsapp:  <MessageCircle size={18} />,
+  portfolio: <Globe      size={18} />,
 }
 
-const COLOR_MAP: Record<string, string> = {
-  instagram:  '#E1306C',
-  linkedin:   '#0077B5',
-  spotify:    '#1DB954',
-  email:      '#3A6DBF',
-  snapchat:   '#FFAA00',
-  whatsapp:   '#25D366',
-  portfolio:  '#6A4AB8',
+const ICON_LETTER: Record<string, string> = {
+  instagram: 'I',
+  linkedin:  'Li',
+  spotify:   'S',
+  email:     'E',
+  snapchat:  'Sc',
+  whatsapp:  'W',
+  portfolio: 'P',
+}
+
+const MODE_COLORS: Record<string, string> = {
+  'Soirée':  '#C95470',
+  'Pro':     '#4B6DC7',
+  'Sport':   '#2D8A5A',
+  'Discret': '#7C5ABF',
+}
+
+function safeHref(url: string): string {
+  if (!url) return '#'
+  if (url.startsWith('http') || url.startsWith('mailto:') || url.startsWith('tel:')) return url
+  if (url.includes('@') && !url.includes('/') && !url.includes(' ')) return `mailto:${url}`
+  return `https://${url}`
+}
+
+function downloadVCard(profile: Profile, links: Link[], bio: string | null) {
+  const email     = links.find(l => l.icon === 'email')?.url
+  const portfolio = links.find(l => l.icon === 'portfolio')?.url
+  const profileUrl = `${window.location.origin}/p/${profile.username}`
+
+  const lines = [
+    'BEGIN:VCARD',
+    'VERSION:3.0',
+    `FN:${profile.display_name}`,
+    `NICKNAME:${profile.username}`,
+    bio ? `NOTE;CHARSET=UTF-8:${bio}` : '',
+    email ? `EMAIL:${email}` : '',
+    portfolio ? `URL;TYPE=PORTFOLIO:${safeHref(portfolio)}` : '',
+    `URL;TYPE=PROFILE:${profileUrl}`,
+    'END:VCARD',
+  ].filter(Boolean).join('\r\n')
+
+  const blob = new Blob([lines], { type: 'text/vcard;charset=utf-8' })
+  const url  = URL.createObjectURL(blob)
+  const a    = document.createElement('a')
+  a.href     = url
+  a.download = `${profile.username}.vcf`
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
 }
 
 export function PublicProfile() {
   const { username } = useParams<{ username: string }>()
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [links, setLinks]     = useState<Link[]>([])
-  const [loading, setLoading] = useState(true)
+  const navigate = useNavigate()
+  const [profile, setProfile]   = useState<Profile | null>(null)
+  const [links, setLinks]       = useState<Link[]>([])
+  const [loading, setLoading]   = useState(true)
   const [notFound, setNotFound] = useState(false)
+  const [contactSaved, setContactSaved] = useState(false)
 
   useEffect(() => {
     if (!username) return
@@ -81,95 +125,191 @@ export function PublicProfile() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-tap-bg flex items-center justify-center">
-        <Loader2 size={28} className="text-tap-text-3 animate-spin" />
+      <div className="min-h-screen bg-[#0A0A0A] flex flex-col items-center justify-center gap-4">
+        <Loader2 size={28} className="text-white/30 animate-spin" />
       </div>
     )
   }
 
   if (notFound || !profile) {
     return (
-      <div className="min-h-screen bg-tap-bg flex flex-col items-center justify-center gap-3">
-        <p className="text-5xl">🔍</p>
-        <h1 className="text-xl font-bold text-tap-text-1">Profil introuvable</h1>
-        <p className="text-sm text-tap-text-2">@{username} n'existe pas.</p>
+      <div className="min-h-screen bg-[#0A0A0A] flex flex-col items-center justify-center gap-3 px-6 text-center">
+        <p className="text-5xl font-black text-white/10">404</p>
+        <h1 className="text-xl font-bold text-white">Profil introuvable</h1>
+        <p className="text-sm text-white/40">@{username} n'existe pas.</p>
       </div>
     )
   }
 
-  const initials = profile.display_name
-    .split(' ')
-    .map(n => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2)
+  const initials   = profile.display_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+  const activeMode = profile.active_mode || 'Soirée'
+  const modeColor  = MODE_COLORS[activeMode] ?? '#C95470'
+  const bio        = activeMode === 'Pro' ? profile.bio_pro : profile.bio_soiree
+
+  const handleContact = () => {
+    downloadVCard(profile, links, bio ?? null)
+    setContactSaved(true)
+    setTimeout(() => setContactSaved(false), 3000)
+  }
+
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator.share({ title: profile.display_name, url: window.location.href })
+    } else {
+      navigator.clipboard.writeText(window.location.href)
+    }
+  }
 
   return (
-    <div className="min-h-screen bg-tap-bg">
-      <div className="mx-auto pb-16" style={{ maxWidth: '430px' }}>
+    <div className="min-h-screen bg-[#0A0A0A] flex flex-col">
 
-        {/* Hero */}
-        <div className="px-6 pt-16 pb-8 text-center animate-fade-up">
-          <div className="w-20 h-20 rounded-2xl bg-tap-surface border border-tap-border flex items-center justify-center text-2xl font-bold text-tap-text-1 mx-auto mb-4">
-            {initials}
+      {/* ─── Back button ─── */}
+      {window.history.length > 1 && (
+        <button
+          onClick={() => navigate(-1)}
+          className="fixed top-12 left-4 z-50 w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm border border-white/15 flex items-center justify-center text-white transition-all active:scale-90 hover:bg-white/20"
+        >
+          <ChevronLeft size={20} />
+        </button>
+      )}
+
+      {/* ─── Photo hero ─── */}
+      <div className="relative h-[52vh] bg-[#111111] overflow-hidden flex-shrink-0">
+        <div
+          className="absolute inset-0 flex items-center justify-center select-none pointer-events-none"
+          style={{
+            background: `radial-gradient(ellipse 80% 60% at 50% 40%, ${modeColor}18 0%, transparent 70%)`,
+          }}
+        >
+          <div className="text-center space-y-3">
+            <div
+              className="w-20 h-20 rounded-full mx-auto flex items-center justify-center text-2xl font-black"
+              style={{ background: `${modeColor}20`, color: `${modeColor}80` }}
+            >
+              {initials}
+            </div>
+            <p className="text-[11px] text-white/15 uppercase tracking-[0.25em] font-medium px-8 leading-relaxed">
+              photo de profil · portrait · fashion · soiree
+            </p>
           </div>
-          <h1 className="text-2xl font-bold text-tap-text-1 mb-1">
-            {profile.display_name}
-          </h1>
-          <p className="text-sm text-tap-text-3 mb-1">@{profile.username}</p>
-          {(() => {
-            const bio = profile.active_mode === 'Pro' ? profile.bio_pro : profile.bio_soiree
-            return bio ? <p className="text-sm text-tap-text-2 mt-3 leading-relaxed">{bio}</p> : null
-          })()}
         </div>
 
-        {/* Links */}
-        {links.length > 0 ? (
-          <div className="px-5 space-y-3 animate-fade-up [animation-delay:80ms]">
-            <p className="text-xs font-medium text-tap-text-3 uppercase tracking-widest px-1">
-              Liens
-            </p>
-            <div className="space-y-2">
-              {links.map(link => {
-                const color = COLOR_MAP[link.icon] ?? '#FFFFFF'
-                const icon  = ICON_MAP[link.icon]  ?? <Globe size={18} />
-                return (
-                  <a
-                    key={link.id}
-                    href={link.url.startsWith('http') ? link.url : `https://${link.url}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 bg-tap-surface rounded-2xl border border-tap-border p-4 transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
-                  >
-                    <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                      style={{ backgroundColor: `${color}18`, color }}
-                    >
-                      {icon}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-tap-text-1">{link.title}</p>
-                      <p className="text-xs text-tap-text-3 truncate">{link.url}</p>
-                    </div>
-                    <ExternalLink size={14} className="text-tap-text-3 flex-shrink-0" />
-                  </a>
-                )
-              })}
+        {/* Bottom fade */}
+        <div
+          className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none"
+          style={{ background: 'linear-gradient(to bottom, transparent, #0A0A0A)' }}
+        />
+      </div>
+
+      {/* ─── Content ─── */}
+      <div className="flex-1 px-5 pt-6 pb-10 space-y-6 animate-slide-up">
+
+        {/* Name + username */}
+        <div className="space-y-1">
+          <h1 className="text-[2.4rem] font-black text-white leading-[1.05] tracking-tight">
+            {profile.display_name}
+          </h1>
+          <p className="text-sm text-white/40">@{profile.username}</p>
+        </div>
+
+        {/* ─── CTA buttons ─── */}
+        <div className="flex gap-3">
+          <button
+            onClick={handleContact}
+            className="flex-1 h-12 rounded-full border border-white/25 text-white text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 active:scale-95 hover:border-white/50"
+            style={contactSaved ? { borderColor: '#2D8A5A', color: '#2D8A5A' } : {}}
+          >
+            <UserPlus size={16} strokeWidth={2} />
+            {contactSaved ? 'Contact enregistré !' : '+ Ajouter à mes contacts'}
+          </button>
+          <button
+            onClick={handleShare}
+            className="w-12 h-12 rounded-full border border-white/25 text-white flex items-center justify-center flex-shrink-0 transition-all active:scale-95 hover:border-white/50"
+          >
+            <Share2 size={15} />
+          </button>
+        </div>
+
+        {/* ─── Stats ─── */}
+        <div className="grid grid-cols-3 gap-0 border border-white/08 rounded-2xl overflow-hidden bg-white/04">
+          {[
+            { value: '23', label: 'relations' },
+            { value: '14', label: 'retours' },
+            { value: '4',  label: 'projets' },
+          ].map((stat, i) => (
+            <div
+              key={stat.label}
+              className={`py-4 text-center ${i < 2 ? 'border-r border-white/08' : ''}`}
+            >
+              <p className="text-2xl font-black text-white leading-none mb-1">{stat.value}</p>
+              <p className="text-[11px] text-white/35">{stat.label}</p>
             </div>
+          ))}
+        </div>
+
+        {/* ─── Mode badge ─── */}
+        <div className="flex items-center gap-2">
+          <div
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border"
+            style={{ borderColor: `${modeColor}30`, backgroundColor: `${modeColor}10` }}
+          >
+            <span className="w-1.5 h-1.5 rounded-full animate-pulse-dot" style={{ backgroundColor: modeColor }} />
+            <span className="text-[11px] font-semibold" style={{ color: modeColor }}>
+              Mode {activeMode}
+            </span>
           </div>
-        ) : (
-          <div className="px-5 text-center py-8">
-            <p className="text-sm text-tap-text-3">Aucun lien pour l'instant.</p>
+        </div>
+
+        {/* ─── Bio ─── */}
+        {bio && (
+          <p className="text-[14px] text-white/60 leading-relaxed">
+            {bio}
+          </p>
+        )}
+
+        {/* ─── Links ─── */}
+        {links.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-[11px] font-bold text-white/25 uppercase tracking-[0.22em]">
+              Retrouve-moi sur
+            </p>
+            {links.map((link, index) => {
+              const icon  = ICON_MAP[link.icon] ?? <Globe size={18} />
+              const letter = ICON_LETTER[link.icon] ?? link.title[0]
+
+              return (
+                <a
+                  key={link.id}
+                  href={safeHref(link.url)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-4 py-4 border-b border-white/06 transition-opacity active:opacity-60 group"
+                >
+                  <span className="text-[11px] font-bold text-white/20 w-4 flex-shrink-0 text-center">
+                    {index + 1}
+                  </span>
+                  <div className="w-9 h-9 rounded-xl bg-white/08 flex items-center justify-center flex-shrink-0 text-white/50 group-hover:bg-white/12 transition-colors">
+                    {icon}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[14px] font-semibold text-white leading-tight">{link.title}</p>
+                    <p className="text-[12px] text-white/35 truncate mt-0.5">{link.url}</p>
+                  </div>
+                </a>
+              )
+            })}
           </div>
         )}
 
-        {/* Footer */}
-        <div className="text-center pt-10">
-          <p className="text-xs text-tap-text-3/50 uppercase tracking-widest">
-            propulsé par TAP
-          </p>
-        </div>
+        {links.length === 0 && (
+          <div className="rounded-2xl border border-white/08 p-8 text-center bg-white/04">
+            <p className="text-sm text-white/25">Aucun lien pour l'instant.</p>
+          </div>
+        )}
 
+        <p className="text-center text-[10px] font-semibold text-white/15 uppercase tracking-[0.28em] pt-2">
+          propulsé par TAP
+        </p>
       </div>
     </div>
   )
