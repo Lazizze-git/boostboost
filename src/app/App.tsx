@@ -118,7 +118,6 @@ function App() {
           <Settings
             profile={profile}
             onUpdated={fetchProfile}
-            onReconfigure={() => setCurrentView('setup')}
           />
         )}
 

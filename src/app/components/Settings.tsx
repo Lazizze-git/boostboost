@@ -1,23 +1,24 @@
 import { useState, useEffect } from 'react'
-import { Loader2, Wifi, LogOut, Link2Off } from 'lucide-react'
+import { Loader2, LogOut, Link2Off, Copy, Check } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import type { SupabaseProfile } from '../App'
 
 interface SettingsProps {
   profile: SupabaseProfile
   onUpdated: () => Promise<SupabaseProfile | undefined>
-  onReconfigure: () => void
 }
 
-export function Settings({ profile, onUpdated, onReconfigure }: SettingsProps) {
+export function Settings({ profile, onUpdated }: SettingsProps) {
   const [username, setUsername]       = useState(profile.username)
   const [displayName, setDisplayName] = useState(profile.display_name)
   const [loading, setLoading]         = useState(false)
   const [error, setError]             = useState('')
   const [saved, setSaved]             = useState(false)
-  const [usernameChanged, setUsernameChanged] = useState(false)
   const [linkedTapId, setLinkedTapId] = useState<string | null>(null)
   const [unlinking, setUnlinking]     = useState(false)
+  const [copied, setCopied]           = useState(false)
+
+  const profileUrl = `https://boostboost.vercel.app/p/${profile.username}`
 
   useEffect(() => {
     supabase
@@ -37,6 +38,12 @@ export function Settings({ profile, onUpdated, onReconfigure }: SettingsProps) {
       .eq('tap_id', linkedTapId)
     setLinkedTapId(null)
     setUnlinking(false)
+  }
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(profileUrl)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
   }
 
   const handleSave = async (e: React.FormEvent) => {
@@ -60,7 +67,7 @@ export function Settings({ profile, onUpdated, onReconfigure }: SettingsProps) {
         .maybeSingle()
 
       if (existing) {
-        setError('Ce nom d\'utilisateur est déjà pris.')
+        setError("Ce nom d'utilisateur est déjà pris.")
         setLoading(false)
         return
       }
@@ -79,7 +86,6 @@ export function Settings({ profile, onUpdated, onReconfigure }: SettingsProps) {
 
     await onUpdated()
     setSaved(true)
-    setUsernameChanged(clean !== profile.username)
     setLoading(false)
   }
 
@@ -101,6 +107,25 @@ export function Settings({ profile, onUpdated, onReconfigure }: SettingsProps) {
       </div>
 
       <div className="px-5 pb-32 space-y-5">
+
+        {/* ─── Mon lien profil ─── */}
+        <section className="space-y-2">
+          <p className="text-[11px] font-bold text-[rgba(28,20,16,0.35)] uppercase tracking-[0.20em] px-0.5">
+            Mon lien profil
+          </p>
+          <div className="bg-white rounded-2xl border border-[rgba(28,20,16,0.07)] px-4 py-4 flex items-center gap-3">
+            <p className="flex-1 text-sm font-mono text-[rgba(28,20,16,0.55)] truncate">{profileUrl}</p>
+            <button
+              onClick={handleCopy}
+              className="flex-shrink-0 w-9 h-9 rounded-full bg-[rgba(28,20,16,0.06)] flex items-center justify-center transition-all active:scale-95"
+            >
+              {copied
+                ? <Check size={15} className="text-[#2D8A5A]" />
+                : <Copy size={15} className="text-[rgba(28,20,16,0.50)]" />
+              }
+            </button>
+          </div>
+        </section>
 
         {/* ─── Profil ─── */}
         <section className="space-y-2">
@@ -136,10 +161,6 @@ export function Settings({ profile, onUpdated, onReconfigure }: SettingsProps) {
                   className="flex-1 bg-transparent text-sm font-semibold text-[#1C1410] outline-none placeholder:text-[rgba(28,20,16,0.25)]"
                 />
               </div>
-              <p className="text-[11px] text-[rgba(28,20,16,0.30)] mt-1">
-                Profil public :{' '}
-                <span className="font-mono">/p/{username || 'username'}</span>
-              </p>
             </div>
 
             {error && (
@@ -161,24 +182,7 @@ export function Settings({ profile, onUpdated, onReconfigure }: SettingsProps) {
           </form>
         </section>
 
-        {/* ─── Alerte username changé ─── */}
-        {saved && usernameChanged && (
-          <div className="bg-white rounded-2xl border border-[rgba(28,20,16,0.07)] p-5 space-y-3">
-            <p className="text-sm font-bold text-[#1C1410]">Ton username a changé</p>
-            <p className="text-sm text-[rgba(28,20,16,0.50)] leading-relaxed">
-              Ton lien NFC pointe encore vers l'ancienne URL. Reprogramme ton bracelet pour qu'il fonctionne.
-            </p>
-            <button
-              onClick={onReconfigure}
-              className="w-full h-11 rounded-full bg-[#1C1410] text-white text-sm font-semibold flex items-center justify-center gap-2 transition-all active:scale-95"
-            >
-              <Wifi size={15} />
-              Reconfigurer le bracelet
-            </button>
-          </div>
-        )}
-
-        {saved && !usernameChanged && (
+        {saved && (
           <p className="text-sm text-center text-[#2D8A5A] font-medium">Modifications enregistrées !</p>
         )}
 
@@ -194,21 +198,14 @@ export function Settings({ profile, onUpdated, onReconfigure }: SettingsProps) {
                   <p className="text-sm font-semibold text-[#1C1410]">Bracelet lié</p>
                   <p className="text-xs text-[rgba(28,20,16,0.35)] font-mono mt-1">{linkedTapId}</p>
                 </div>
-                <div className="px-4 py-4 flex gap-2">
+                <div className="px-4 py-4">
                   <button
                     onClick={handleUnlink}
                     disabled={unlinking}
-                    className="flex-1 h-11 rounded-full border border-[rgba(28,20,16,0.12)] text-red-500 text-sm font-semibold flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-40 hover:border-red-200"
+                    className="w-full h-11 rounded-full border border-[rgba(28,20,16,0.12)] text-red-500 text-sm font-semibold flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-40 hover:border-red-200"
                   >
                     {unlinking ? <Loader2 size={14} className="animate-spin" /> : <Link2Off size={14} />}
-                    Délier
-                  </button>
-                  <button
-                    onClick={onReconfigure}
-                    className="flex-1 h-11 rounded-full bg-[rgba(28,20,16,0.06)] text-[rgba(28,20,16,0.70)] text-sm font-semibold flex items-center justify-center gap-2 transition-all active:scale-95 hover:bg-[rgba(28,20,16,0.10)]"
-                  >
-                    <Wifi size={14} />
-                    Reconfigurer
+                    Délier le bracelet
                   </button>
                 </div>
               </div>
