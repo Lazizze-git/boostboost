@@ -216,13 +216,6 @@ export function ProfilePreview({ profile }: ProfilePreviewProps) {
           ))}
         </div>
 
-        {/* ─── Bracelet status ─── */}
-        <div className="flex items-center justify-center gap-2">
-          <BraceletIcon color={t3} />
-          <span className="text-sm" style={{ color: t2 }}>Bracelet connecté · 87%</span>
-          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: t1, opacity: 0.7 }} />
-        </div>
-
         {/* ─── Aperçu profil ─── */}
         <button
           onClick={() => navigate(`/p/${profile.username}`)}
@@ -236,12 +229,3 @@ export function ProfilePreview({ profile }: ProfilePreviewProps) {
   )
 }
 
-function BraceletIcon({ color }: { color: string }) {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="10" width="20" height="4" rx="2" />
-      <path d="M7 10V7a5 5 0 0 1 10 0v3" />
-      <path d="M7 14v3a5 5 0 0 0 10 0v-3" />
-    </svg>
-  )
-}
