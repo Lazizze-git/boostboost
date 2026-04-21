@@ -179,43 +179,23 @@ export function PublicProfile() {
         </button>
       )}
 
-      {/* ─── Photo hero ─── */}
-      <div className="relative h-[52vh] bg-[#111111] overflow-hidden flex-shrink-0">
-        <div
-          className="absolute inset-0 flex items-center justify-center select-none pointer-events-none"
-          style={{
-            background: `radial-gradient(ellipse 80% 60% at 50% 40%, ${modeColor}18 0%, transparent 70%)`,
-          }}
-        >
-          <div className="text-center space-y-3">
-            <div
-              className="w-20 h-20 rounded-full mx-auto flex items-center justify-center text-2xl font-black"
-              style={{ background: `${modeColor}20`, color: `${modeColor}80` }}
-            >
-              {initials}
-            </div>
-            <p className="text-[11px] text-white/15 uppercase tracking-[0.25em] font-medium px-8 leading-relaxed">
-              photo de profil · portrait · fashion · soiree
-            </p>
-          </div>
-        </div>
-
-        {/* Bottom fade */}
-        <div
-          className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none"
-          style={{ background: 'linear-gradient(to bottom, transparent, #0A0A0A)' }}
-        />
-      </div>
-
       {/* ─── Content ─── */}
-      <div className="flex-1 px-5 pt-2 pb-10 space-y-6 animate-slide-up">
+      <div className="flex-1 px-5 pt-20 pb-10 space-y-6 animate-slide-up">
 
-        {/* Name + username */}
-        <div className="space-y-1">
-          <h1 className="text-[2.4rem] font-black text-white leading-[1.05] tracking-tight">
-            {profile.display_name}
-          </h1>
-          <p className="text-sm text-white/40">@{profile.username}</p>
+        {/* Avatar + Name + username */}
+        <div className="flex flex-col items-center text-center space-y-3">
+          <div
+            className="w-20 h-20 rounded-full flex items-center justify-center text-2xl font-black"
+            style={{ background: `${modeColor}20`, color: `${modeColor}90` }}
+          >
+            {initials}
+          </div>
+          <div className="space-y-1">
+            <h1 className="text-[2.4rem] font-black text-white leading-[1.05] tracking-tight">
+              {profile.display_name}
+            </h1>
+            <p className="text-sm text-white/40">@{profile.username}</p>
+          </div>
         </div>
 
         {/* ─── CTA buttons ─── */}
