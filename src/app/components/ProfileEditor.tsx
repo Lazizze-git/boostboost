@@ -206,10 +206,6 @@ export function ProfileEditor({ profile: supabaseProfile, onSaved }: ProfileEdit
               {profile.bio || 'Ajouter une bio pour ce mode…'}
             </p>
           </div>
-          <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-[rgba(28,20,16,0.06)] flex-shrink-0">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#C95470] animate-pulse-dot" />
-            <span className="text-[10px] font-semibold text-[rgba(28,20,16,0.50)]">{activeMode}</span>
-          </div>
         </div>
 
         {/* Mode tabs */}
