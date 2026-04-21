@@ -202,7 +202,7 @@ export function PublicProfile() {
       </div>
 
       {/* ─── Content ─── */}
-      <div className="flex-1 px-5 pt-6 pb-10 space-y-6 animate-slide-up">
+      <div className="flex-1 px-5 pt-2 pb-10 space-y-6 animate-slide-up">
 
         {/* Name + username */}
         <div className="space-y-1">
