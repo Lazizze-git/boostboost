@@ -33,14 +33,14 @@ const ICON_MAP: Record<string, React.ReactNode> = {
   portfolio: <Globe      size={18} />,
 }
 
-const ICON_LETTER: Record<string, string> = {
-  instagram: 'I',
-  linkedin:  'Li',
-  spotify:   'S',
-  email:     'E',
-  snapchat:  'Sc',
-  whatsapp:  'W',
-  portfolio: 'P',
+const COLOR_MAP: Record<string, string> = {
+  instagram: '#E1306C',
+  linkedin:  '#0077B5',
+  spotify:   '#1DB954',
+  email:     '#3A6DBF',
+  snapchat:  '#FFAA00',
+  whatsapp:  '#25D366',
+  portfolio: '#6A4AB8',
 }
 
 const MODE_COLORS: Record<string, string> = {
@@ -244,7 +244,7 @@ export function PublicProfile() {
             </p>
             {links.map((link, index) => {
               const icon  = ICON_MAP[link.icon] ?? <Globe size={18} />
-              const letter = ICON_LETTER[link.icon] ?? link.title[0]
+              const color = COLOR_MAP[link.icon] ?? '#FFFFFF'
 
               return (
                 <a
@@ -257,7 +257,10 @@ export function PublicProfile() {
                   <span className="text-[11px] font-bold text-white/20 w-4 flex-shrink-0 text-center">
                     {index + 1}
                   </span>
-                  <div className="w-9 h-9 rounded-xl bg-white/08 flex items-center justify-center flex-shrink-0 text-white/50 group-hover:bg-white/12 transition-colors">
+                  <div
+                    className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-opacity"
+                    style={{ backgroundColor: `${color}22`, color }}
+                  >
                     {icon}
                   </div>
                   <div className="flex-1 min-w-0">
