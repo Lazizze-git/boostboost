@@ -89,7 +89,12 @@ export function ProfileEditor({ profile: supabaseProfile, onSaved }: ProfileEdit
         for (const mode of MODES) {
           const modeLinks = allLinks.filter((d: { mode: string }) => d.mode === mode)
           updated[mode] = {
-            bio: (mode === 'Soirée' ? supabaseProfile.bio_soiree : supabaseProfile.bio_pro) || '',
+            bio: ({
+              'Soirée':  supabaseProfile.bio_soiree,
+              'Pro':     supabaseProfile.bio_pro,
+              'Sport':   supabaseProfile.bio_sport,
+              'Discret': supabaseProfile.bio_discret,
+            }[mode]) || '',
             links: prev[mode].links.map(link => {
               const saved = modeLinks.find((d: { icon: string; url: string }) => d.icon === link.id)
               return saved ? { ...link, handle: saved.url, enabled: true } : { ...link, enabled: false }
@@ -107,8 +112,10 @@ export function ProfileEditor({ profile: supabaseProfile, onSaved }: ProfileEdit
     const activeProfile = profiles[activeMode]
 
     await supabase.from('profiles').update({
-      ...(activeMode === 'Soirée' ? { bio_soiree: activeProfile.bio } : {}),
-      ...(activeMode === 'Pro'    ? { bio_pro:    activeProfile.bio } : {}),
+      ...(activeMode === 'Soirée'  ? { bio_soiree:  activeProfile.bio } : {}),
+      ...(activeMode === 'Pro'     ? { bio_pro:     activeProfile.bio } : {}),
+      ...(activeMode === 'Sport'   ? { bio_sport:   activeProfile.bio } : {}),
+      ...(activeMode === 'Discret' ? { bio_discret: activeProfile.bio } : {}),
     }).eq('id', supabaseProfile.id)
 
     await supabase.from('links').delete()

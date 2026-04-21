@@ -17,6 +17,8 @@ export interface SupabaseProfile {
   bio: string
   bio_soiree: string | null
   bio_pro: string | null
+  bio_sport: string | null
+  bio_discret: string | null
   active_mode: string
   avatar_url: string | null
 }

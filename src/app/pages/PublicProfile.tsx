@@ -10,6 +10,8 @@ interface Profile {
   bio: string | null
   bio_soiree: string | null
   bio_pro: string | null
+  bio_sport: string | null
+  bio_discret: string | null
   active_mode: string | null
 }
 
@@ -144,7 +146,11 @@ export function PublicProfile() {
   const initials   = profile.display_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
   const activeMode = profile.active_mode || 'Soirée'
   const modeColor  = MODE_COLORS[activeMode] ?? '#C95470'
-  const bio        = activeMode === 'Pro' ? profile.bio_pro : profile.bio_soiree
+  const bio = ({
+    'Pro':     profile.bio_pro,
+    'Sport':   profile.bio_sport,
+    'Discret': profile.bio_discret,
+  } as Record<string, string | null>)[activeMode] ?? profile.bio_soiree
 
   const handleContact = () => {
     downloadVCard(profile, links, bio ?? null)
