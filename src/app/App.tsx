@@ -108,7 +108,10 @@ function App() {
             username={profile.username}
           />
         ) : currentView === 'preview' ? (
-          <ProfilePreview profile={profile} />
+          <ProfilePreview
+            profile={profile}
+            onModeChange={(mode) => setProfile(p => p ? { ...p, active_mode: mode } : p)}
+          />
         ) : currentView === 'editor' ? (
           <ProfileEditor
             profile={profile}

@@ -35,6 +35,7 @@ interface SavedLink { id: string; title: string; url: string; icon: string; orde
 
 interface ProfilePreviewProps {
   profile: SupabaseProfile
+  onModeChange: (mode: string) => void
 }
 
 function isLight(hex: string): boolean {
@@ -45,7 +46,7 @@ function isLight(hex: string): boolean {
   return luminance > 0.55
 }
 
-export function ProfilePreview({ profile }: ProfilePreviewProps) {
+export function ProfilePreview({ profile, onModeChange }: ProfilePreviewProps) {
   const navigate = useNavigate()
   const [activeMode, setActiveMode] = useState<Mode>((profile.active_mode as Mode) || 'Soirée')
   const [savedLinks, setSavedLinks] = useState<SavedLink[]>([])
@@ -62,6 +63,7 @@ export function ProfilePreview({ profile }: ProfilePreviewProps) {
 
   const switchMode = async (mode: Mode) => {
     setActiveMode(mode)
+    onModeChange(mode)
     await supabase.from('profiles').update({ active_mode: mode }).eq('id', profile.id)
   }
 
