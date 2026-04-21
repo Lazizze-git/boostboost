@@ -230,23 +230,6 @@ export function PublicProfile() {
           </button>
         </div>
 
-        {/* ─── Stats ─── */}
-        <div className="grid grid-cols-3 gap-0 border border-white/08 rounded-2xl overflow-hidden bg-white/04">
-          {[
-            { value: '23', label: 'relations' },
-            { value: '14', label: 'retours' },
-            { value: '4',  label: 'projets' },
-          ].map((stat, i) => (
-            <div
-              key={stat.label}
-              className={`py-4 text-center ${i < 2 ? 'border-r border-white/08' : ''}`}
-            >
-              <p className="text-2xl font-black text-white leading-none mb-1">{stat.value}</p>
-              <p className="text-[11px] text-white/35">{stat.label}</p>
-            </div>
-          ))}
-        </div>
-
         {/* ─── Mode badge ─── */}
         <div className="flex items-center gap-2">
           <div

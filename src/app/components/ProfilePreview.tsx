@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
-import type { LucideIcon } from 'lucide-react'
-import { Instagram, Linkedin, Music, Mail, MessageCircle, Globe, ChevronRight } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
 import { useNavigate } from 'react-router'
 import { supabase } from '../../lib/supabase'
 import type { SupabaseProfile } from '../App'
@@ -33,16 +32,6 @@ const LINK_SHORT: Record<string, string> = {
   portfolio: 'Portfolio',
 }
 
-const ICON_MAP: Record<string, LucideIcon> = {
-  instagram: Instagram,
-  linkedin:  Linkedin,
-  spotify:   Music,
-  email:     Mail,
-  snapchat:  MessageCircle,
-  whatsapp:  MessageCircle,
-  portfolio: Globe,
-}
-
 interface SavedLink { id: string; title: string; url: string; icon: string; order: number }
 
 interface ProfilePreviewProps {
@@ -61,7 +50,6 @@ export function ProfilePreview({ profile }: ProfilePreviewProps) {
   const navigate = useNavigate()
   const [activeMode, setActiveMode] = useState<Mode>((profile.active_mode as Mode) || 'Soirée')
   const [savedLinks, setSavedLinks] = useState<SavedLink[]>([])
-  const [modesCount, setModesCount] = useState(0)
 
   useEffect(() => {
     supabase
@@ -73,36 +61,23 @@ export function ProfilePreview({ profile }: ProfilePreviewProps) {
       .then(({ data }) => setSavedLinks(data ?? []))
   }, [profile.id, activeMode])
 
-  useEffect(() => {
-    supabase
-      .from('links')
-      .select('mode')
-      .eq('profile_id', profile.id)
-      .then(({ data }) => {
-        const modes = new Set((data ?? []).map((l: { mode: string }) => l.mode))
-        setModesCount(modes.size)
-      })
-  }, [profile.id])
-
   const switchMode = async (mode: Mode) => {
     setActiveMode(mode)
     await supabase.from('profiles').update({ active_mode: mode }).eq('id', profile.id)
   }
 
-  const bg       = MODE_COLORS[activeMode]
-  const light    = isLight(bg)
-  const t1       = light ? '#0A0A0A'               : '#FFFFFF'
-  const t2       = light ? 'rgba(0,0,0,0.52)'      : 'rgba(255,255,255,0.65)'
-  const t3       = light ? 'rgba(0,0,0,0.32)'      : 'rgba(255,255,255,0.40)'
-  const sep      = light ? 'rgba(0,0,0,0.10)'      : 'rgba(255,255,255,0.18)'
-  const cardBg   = light ? 'rgba(0,0,0,0.07)'      : 'rgba(255,255,255,0.18)'
-  const cardBo   = light ? 'rgba(0,0,0,0.08)'      : 'rgba(255,255,255,0.10)'
-  const pillBg   = light ? 'rgba(0,0,0,0.08)'      : 'rgba(255,255,255,0.18)'
-  const pillBo   = light ? 'rgba(0,0,0,0.14)'      : 'rgba(255,255,255,0.20)'
+  const bg             = MODE_COLORS[activeMode]
+  const light          = isLight(bg)
+  const t1             = light ? '#0A0A0A'          : '#FFFFFF'
+  const t2             = light ? 'rgba(0,0,0,0.52)' : 'rgba(255,255,255,0.65)'
+  const t3             = light ? 'rgba(0,0,0,0.32)' : 'rgba(255,255,255,0.40)'
+  const sep            = light ? 'rgba(0,0,0,0.10)' : 'rgba(255,255,255,0.18)'
+  const pillBg         = light ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.18)'
+  const pillBo         = light ? 'rgba(0,0,0,0.14)' : 'rgba(255,255,255,0.20)'
   const activePillBg   = light ? '#0A0A0A' : '#FFFFFF'
   const activePillText = light ? '#FFFFFF'  : '#0A0A0A'
-  const ctaBg    = light ? '#0A0A0A' : '#FFFFFF'
-  const ctaText  = light ? '#FFFFFF'  : '#0A0A0A'
+  const ctaBg          = light ? '#0A0A0A' : '#FFFFFF'
+  const ctaText        = light ? '#FFFFFF'  : '#0A0A0A'
 
   return (
     <div
@@ -194,28 +169,6 @@ export function ProfilePreview({ profile }: ProfilePreviewProps) {
           </div>
         </section>
 
-        {/* ─── Stats ─── */}
-        <div className="grid grid-cols-3 gap-3">
-          {[
-            { value: '23',                               label: 'taps ce mois' },
-            { value: '14',                               label: 'retours reçus' },
-            { value: String(modesCount || MODES.length), label: 'modes actifs' },
-          ].map(stat => (
-            <div
-              key={stat.label}
-              className="rounded-2xl p-4"
-              style={{ backgroundColor: cardBg, border: `1px solid ${cardBo}` }}
-            >
-              <p className="text-[2rem] font-black leading-none mb-1.5" style={{ color: t1 }}>
-                {stat.value}
-              </p>
-              <p className="text-[11px] leading-tight" style={{ color: t3 }}>
-                {stat.label}
-              </p>
-            </div>
-          ))}
-        </div>
-
         {/* ─── Aperçu profil ─── */}
         <button
           onClick={() => navigate(`/p/${profile.username}`)}
@@ -228,4 +181,3 @@ export function ProfilePreview({ profile }: ProfilePreviewProps) {
     </div>
   )
 }
-
