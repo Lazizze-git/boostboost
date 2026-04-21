@@ -86,12 +86,8 @@ export function ProfilePreview({ profile }: ProfilePreviewProps) {
       <div className="px-5 pt-14 pb-32 space-y-6">
 
         {/* ─── Header ─── */}
-        <header className="flex items-center justify-between">
+        <header>
           <span className="text-sm font-semibold tracking-tight" style={{ color: t1 }}>tap</span>
-          <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: t1, opacity: 0.9 }} />
-            <span className="text-sm" style={{ color: t2 }}>connecté</span>
-          </div>
         </header>
 
         {/* ─── Mode actif ─── */}
