@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { ChevronRight } from 'lucide-react'
 import { useNavigate } from 'react-router'
 import { supabase } from '../../lib/supabase'
 import type { SupabaseProfile } from '../App'
@@ -124,24 +123,6 @@ export function ProfilePreview({ profile }: ProfilePreviewProps) {
             </div>
           )}
         </section>
-
-        {/* ─── Separator ─── */}
-        <div className="h-px" style={{ backgroundColor: sep }} />
-
-        {/* ─── Dernier tap ─── */}
-        <button className="w-full flex items-center gap-3 text-left active:opacity-60 transition-opacity">
-          <div
-            className="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center"
-            style={{ backgroundColor: pillBg }}
-          >
-            <span className="text-[10px] font-bold select-none" style={{ color: t3 }}>SR</span>
-          </div>
-          <div className="flex-1">
-            <p className="text-sm font-semibold" style={{ color: t1 }}>Sarah Roux</p>
-            <p className="text-xs" style={{ color: t3 }}>Dernier tap · il y a 2h</p>
-          </div>
-          <ChevronRight size={15} style={{ color: t3 }} className="flex-shrink-0" />
-        </button>
 
         {/* ─── Separator ─── */}
         <div className="h-px" style={{ backgroundColor: sep }} />
