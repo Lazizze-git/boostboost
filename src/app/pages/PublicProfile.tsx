@@ -184,12 +184,21 @@ export function PublicProfile() {
 
         {/* Avatar + Name + username */}
         <div className="flex flex-col items-center text-center space-y-3">
-          <div
-            className="w-20 h-20 rounded-full flex items-center justify-center text-2xl font-black"
-            style={{ background: `${modeColor}20`, color: `${modeColor}90` }}
-          >
-            {initials}
-          </div>
+          {profile.avatar_url ? (
+            <img
+              src={profile.avatar_url}
+              alt={profile.display_name}
+              className="w-24 h-24 rounded-full object-cover border-2"
+              style={{ borderColor: `${modeColor}40` }}
+            />
+          ) : (
+            <div
+              className="w-24 h-24 rounded-full flex items-center justify-center text-2xl font-black"
+              style={{ background: `${modeColor}20`, color: `${modeColor}90` }}
+            >
+              {initials}
+            </div>
+          )}
           <div className="space-y-1">
             <h1 className="text-[2.4rem] font-black text-white leading-[1.05] tracking-tight">
               {profile.display_name}

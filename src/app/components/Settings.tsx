@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Loader2, LogOut, Link2Off, Copy, Check } from 'lucide-react'
+import { Loader2, LogOut, Link2Off, Copy, Check, Upload, X } from 'lucide-react'
+import imageCompression from 'browser-image-compression'
 import { supabase } from '../../lib/supabase'
 import type { SupabaseProfile } from '../App'
 
@@ -17,6 +18,8 @@ export function Settings({ profile, onUpdated }: SettingsProps) {
   const [linkedTapId, setLinkedTapId] = useState<string | null>(null)
   const [unlinking, setUnlinking]     = useState(false)
   const [copied, setCopied]           = useState(false)
+  const [avatarUrl, setAvatarUrl]     = useState(profile.avatar_url)
+  const [avatarUploading, setAvatarUploading] = useState(false)
 
   const profileUrl = `https://boostboost.vercel.app/p/${profile.username}`
 
@@ -44,6 +47,75 @@ export function Settings({ profile, onUpdated }: SettingsProps) {
     navigator.clipboard.writeText(profileUrl)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setAvatarUploading(true)
+    try {
+      // Compresser l'image
+      const compressedFile = await imageCompression(file, {
+        maxSizeMB: 1,
+        maxWidthOrHeight: 800,
+        useWebWorker: true,
+      })
+
+      // Upload dans Supabase Storage
+      const fileName = `${profile.id}-${Date.now()}.jpg`
+      const { data, error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, compressedFile, { upsert: false })
+
+      if (uploadError) throw uploadError
+
+      // Générer l'URL publique
+      const { data: publicUrlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName)
+
+      // Sauvegarder l'URL dans le profil
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrlData.publicUrl })
+        .eq('id', profile.id)
+
+      if (updateError) throw updateError
+
+      setAvatarUrl(publicUrlData.publicUrl)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2500)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erreur lors de l\'upload'
+      setError(message)
+    } finally {
+      setAvatarUploading(false)
+    }
+  }
+
+  const handleRemoveAvatar = async () => {
+    if (!avatarUrl) return
+
+    setAvatarUploading(true)
+    try {
+      // Supprimer l'URL du profil
+      const { error } = await supabase
+        .from('profiles')
+        .update({ avatar_url: null })
+        .eq('id', profile.id)
+
+      if (error) throw error
+
+      setAvatarUrl(null)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2500)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erreur lors de la suppression'
+      setError(message)
+    } finally {
+      setAvatarUploading(false)
+    }
   }
 
   const handleSave = async (e: React.FormEvent) => {
@@ -107,6 +179,66 @@ export function Settings({ profile, onUpdated }: SettingsProps) {
       </div>
 
       <div className="px-5 pb-32 space-y-5">
+
+        {/* ─── Photo de profil ─── */}
+        <section className="space-y-2">
+          <p className="text-[11px] font-bold text-[rgba(28,20,16,0.35)] uppercase tracking-[0.20em] px-0.5">
+            Photo de profil
+          </p>
+          <div className="bg-white rounded-2xl border border-[rgba(28,20,16,0.07)] overflow-hidden">
+            <div className="px-4 py-6 flex flex-col items-center gap-4">
+              {/* Avatar actuel */}
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt="Avatar"
+                  className="w-24 h-24 rounded-full object-cover border border-[rgba(28,20,16,0.10)]"
+                />
+              ) : (
+                <div className="w-24 h-24 rounded-full bg-[rgba(28,20,16,0.06)] flex items-center justify-center text-sm text-[rgba(28,20,16,0.30)]">
+                  {profile.display_name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)}
+                </div>
+              )}
+
+              {/* Upload ou Supprimer */}
+              <div className="w-full flex gap-2">
+                <label className="flex-1">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarUpload}
+                    disabled={avatarUploading}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={(e) => (e.currentTarget.parentElement?.querySelector('input') as HTMLInputElement)?.click()}
+                    disabled={avatarUploading}
+                    className="w-full h-11 rounded-full bg-[#1C1410] text-white text-sm font-semibold flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-40"
+                  >
+                    {avatarUploading ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <Upload size={14} />
+                    )}
+                    {avatarUploading ? 'Upload...' : 'Changer la photo'}
+                  </button>
+                </label>
+
+                {avatarUrl && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveAvatar}
+                    disabled={avatarUploading}
+                    className="w-11 h-11 rounded-full bg-[rgba(28,20,16,0.06)] text-red-500 flex items-center justify-center transition-all active:scale-95 disabled:opacity-40 hover:bg-[rgba(28,20,16,0.10)]"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
 
         {/* ─── Mon lien profil ─── */}
         <section className="space-y-2">
