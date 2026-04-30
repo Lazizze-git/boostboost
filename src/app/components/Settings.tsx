@@ -55,27 +55,23 @@ export function Settings({ profile, onUpdated }: SettingsProps) {
 
     setAvatarUploading(true)
     try {
-      // Compresser l'image
       const compressedFile = await imageCompression(file, {
         maxSizeMB: 1,
         maxWidthOrHeight: 800,
         useWebWorker: true,
       })
 
-      // Upload dans Supabase Storage
       const fileName = `${profile.id}-${Date.now()}.jpg`
-      const { data, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(fileName, compressedFile, { upsert: false })
 
       if (uploadError) throw uploadError
 
-      // Générer l'URL publique
       const { data: publicUrlData } = supabase.storage
         .from('avatars')
         .getPublicUrl(fileName)
 
-      // Sauvegarder l'URL dans le profil
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ avatar_url: publicUrlData.publicUrl })
@@ -87,8 +83,7 @@ export function Settings({ profile, onUpdated }: SettingsProps) {
       setSaved(true)
       setTimeout(() => setSaved(false), 2500)
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erreur lors de l\'upload'
-      setError(message)
+      setError(err instanceof Error ? err.message : "Erreur lors de l'upload")
     } finally {
       setAvatarUploading(false)
     }
@@ -96,23 +91,18 @@ export function Settings({ profile, onUpdated }: SettingsProps) {
 
   const handleRemoveAvatar = async () => {
     if (!avatarUrl) return
-
     setAvatarUploading(true)
     try {
-      // Supprimer l'URL du profil
       const { error } = await supabase
         .from('profiles')
         .update({ avatar_url: null })
         .eq('id', profile.id)
-
       if (error) throw error
-
       setAvatarUrl(null)
       setSaved(true)
       setTimeout(() => setSaved(false), 2500)
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erreur lors de la suppression'
-      setError(message)
+      setError(err instanceof Error ? err.message : 'Erreur lors de la suppression')
     } finally {
       setAvatarUploading(false)
     }
@@ -187,7 +177,6 @@ export function Settings({ profile, onUpdated }: SettingsProps) {
           </p>
           <div className="bg-white rounded-2xl border border-[rgba(28,20,16,0.07)] overflow-hidden">
             <div className="px-4 py-6 flex flex-col items-center gap-4">
-              {/* Avatar actuel */}
               {avatarUrl ? (
                 <img
                   src={avatarUrl}
@@ -200,7 +189,6 @@ export function Settings({ profile, onUpdated }: SettingsProps) {
                 </div>
               )}
 
-              {/* Upload ou Supprimer */}
               <div className="w-full flex gap-2">
                 <label className="flex-1">
                   <input
@@ -216,11 +204,7 @@ export function Settings({ profile, onUpdated }: SettingsProps) {
                     disabled={avatarUploading}
                     className="w-full h-11 rounded-full bg-[#1C1410] text-white text-sm font-semibold flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-40"
                   >
-                    {avatarUploading ? (
-                      <Loader2 size={14} className="animate-spin" />
-                    ) : (
-                      <Upload size={14} />
-                    )}
+                    {avatarUploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
                     {avatarUploading ? 'Upload...' : 'Changer la photo'}
                   </button>
                 </label>

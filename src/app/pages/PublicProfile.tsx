@@ -13,6 +13,7 @@ interface Profile {
   bio_sport: string | null
   bio_discret: string | null
   active_mode: string | null
+  avatar_url: string | null
 }
 
 interface Link {
@@ -43,12 +44,6 @@ const COLOR_MAP: Record<string, string> = {
   portfolio: '#6A4AB8',
 }
 
-const MODE_COLORS: Record<string, string> = {
-  'Soirée':  '#C95470',
-  'Pro':     '#4B6DC7',
-  'Sport':   '#2D8A5A',
-  'Discret': '#7C5ABF',
-}
 
 function safeHref(url: string): string {
   if (!url) return '#'
@@ -145,7 +140,6 @@ export function PublicProfile() {
 
   const initials   = profile.display_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
   const activeMode = profile.active_mode || 'Soirée'
-  const modeColor  = MODE_COLORS[activeMode] ?? '#C95470'
   const bio = ({
     'Pro':     profile.bio_pro,
     'Sport':   profile.bio_sport,
@@ -172,7 +166,7 @@ export function PublicProfile() {
       {/* ─── Background image ─── */}
       {profile.avatar_url && (
         <div
-          className="absolute inset-0 bg-cover bg-center"
+          className="absolute inset-0 bg-cover bg-top"
           style={{ backgroundImage: `url(${profile.avatar_url})` }}
         />
       )}
@@ -182,7 +176,7 @@ export function PublicProfile() {
         className="absolute inset-0"
         style={{
           background: profile.avatar_url
-            ? 'linear-gradient(to bottom, transparent 50%, rgba(10,10,10,0.2) 70%, rgba(10,10,10,0.9) 95%)'
+            ? 'linear-gradient(to bottom, transparent 15%, rgba(10,10,10,0.4) 45%, rgba(10,10,10,0.85) 70%, #0A0A0A 88%)'
             : 'linear-gradient(to bottom, transparent, #0A0A0A)',
         }}
       />
@@ -231,19 +225,6 @@ export function PublicProfile() {
           >
             <Share2 size={15} />
           </button>
-        </div>
-
-        {/* ─── Mode badge ─── */}
-        <div className="flex items-center gap-2 mb-6 animate-slide-up [animation-delay:160ms]">
-          <div
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border"
-            style={{ borderColor: `${modeColor}50`, backgroundColor: `${modeColor}20` }}
-          >
-            <span className="w-1.5 h-1.5 rounded-full animate-pulse-dot" style={{ backgroundColor: modeColor }} />
-            <span className="text-[11px] font-semibold" style={{ color: modeColor }}>
-              Mode {activeMode}
-            </span>
-          </div>
         </div>
 
         {/* ─── Links ─── */}

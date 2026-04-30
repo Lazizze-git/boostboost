@@ -21,7 +21,13 @@ export function Auth() {
     if (mode === 'signup') {
       const { error } = await supabase.auth.signUp({ email, password })
       if (error) {
-        setError(error.message)
+        if (error.message.toLowerCase().includes('rate limit')) {
+          setError('Trop de tentatives. Attends quelques minutes avant de réessayer.')
+        } else if (error.message.toLowerCase().includes('already registered')) {
+          setError('Cet email est déjà utilisé. Connecte-toi plutôt.')
+        } else {
+          setError(error.message)
+        }
       } else {
         setSuccess('Vérifie ton email pour confirmer ton compte.')
       }
