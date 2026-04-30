@@ -167,7 +167,25 @@ export function PublicProfile() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] flex flex-col">
+    <div className="min-h-screen bg-[#0A0A0A] flex flex-col relative overflow-hidden">
+
+      {/* ─── Background image ─── */}
+      {profile.avatar_url && (
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${profile.avatar_url})` }}
+        />
+      )}
+
+      {/* ─── Gradient overlay ─── */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background: profile.avatar_url
+            ? 'linear-gradient(to bottom, transparent 30%, rgba(10,10,10,0.4) 60%, rgba(10,10,10,0.95) 100%)'
+            : 'linear-gradient(to bottom, transparent, #0A0A0A)',
+        }}
+      />
 
       {/* ─── Back button ─── */}
       {window.history.length > 1 && (
@@ -180,35 +198,25 @@ export function PublicProfile() {
       )}
 
       {/* ─── Content ─── */}
-      <div className="flex-1 px-5 pt-20 pb-10 space-y-6 animate-slide-up">
+      <div className="relative z-10 flex-1 flex flex-col justify-end px-5 pb-10 pt-32">
 
-        {/* Avatar + Name + username */}
-        <div className="flex flex-col items-center text-center space-y-3">
-          {profile.avatar_url ? (
-            <img
-              src={profile.avatar_url}
-              alt={profile.display_name}
-              className="w-24 h-24 rounded-full object-cover border-2"
-              style={{ borderColor: `${modeColor}40` }}
-            />
-          ) : (
-            <div
-              className="w-24 h-24 rounded-full flex items-center justify-center text-2xl font-black"
-              style={{ background: `${modeColor}20`, color: `${modeColor}90` }}
-            >
-              {initials}
-            </div>
-          )}
-          <div className="space-y-1">
-            <h1 className="text-[2.4rem] font-black text-white leading-[1.05] tracking-tight">
+        {/* Name + username + bio */}
+        <div className="space-y-4 mb-6 animate-slide-up">
+          <div className="space-y-2">
+            <h1 className="text-[2.8rem] font-black text-white leading-[1.1] tracking-tight">
               {profile.display_name}
             </h1>
-            <p className="text-sm text-white/40">@{profile.username}</p>
+            <p className="text-sm text-white/60">@{profile.username}</p>
+            {bio && (
+              <p className="text-base text-white/80 leading-relaxed max-w-sm">
+                {bio}
+              </p>
+            )}
           </div>
         </div>
 
         {/* ─── CTA buttons ─── */}
-        <div className="flex gap-3">
+        <div className="flex gap-3 mb-6 animate-slide-up [animation-delay:80ms]">
           <button
             onClick={handleContact}
             className="flex-1 h-12 rounded-full border border-white/25 text-white text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 active:scale-95 hover:border-white/50"
@@ -226,10 +234,10 @@ export function PublicProfile() {
         </div>
 
         {/* ─── Mode badge ─── */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 mb-6 animate-slide-up [animation-delay:160ms]">
           <div
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border"
-            style={{ borderColor: `${modeColor}30`, backgroundColor: `${modeColor}10` }}
+            style={{ borderColor: `${modeColor}50`, backgroundColor: `${modeColor}20` }}
           >
             <span className="w-1.5 h-1.5 rounded-full animate-pulse-dot" style={{ backgroundColor: modeColor }} />
             <span className="text-[11px] font-semibold" style={{ color: modeColor }}>
@@ -238,17 +246,10 @@ export function PublicProfile() {
           </div>
         </div>
 
-        {/* ─── Bio ─── */}
-        {bio && (
-          <p className="text-[14px] text-white/60 leading-relaxed">
-            {bio}
-          </p>
-        )}
-
         {/* ─── Links ─── */}
         {links.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-[11px] font-bold text-white/25 uppercase tracking-[0.22em]">
+          <div className="space-y-2 animate-slide-up [animation-delay:240ms]">
+            <p className="text-[11px] font-bold text-white/35 uppercase tracking-[0.22em]">
               Retrouve-moi sur
             </p>
             {links.map((link, index) => {
@@ -261,9 +262,9 @@ export function PublicProfile() {
                   href={safeHref(link.url)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-4 py-4 border-b border-white/06 transition-opacity active:opacity-60 group"
+                  className="flex items-center gap-4 py-3 border-b border-white/10 transition-opacity active:opacity-60 group"
                 >
-                  <span className="text-[11px] font-bold text-white/20 w-4 flex-shrink-0 text-center">
+                  <span className="text-[11px] font-bold text-white/25 w-4 flex-shrink-0 text-center">
                     {index + 1}
                   </span>
                   <div
@@ -273,8 +274,8 @@ export function PublicProfile() {
                     {icon}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[14px] font-semibold text-white leading-tight">{link.title}</p>
-                    <p className="text-[12px] text-white/35 truncate mt-0.5">{link.url}</p>
+                    <p className="text-sm font-semibold text-white leading-tight">{link.title}</p>
+                    <p className="text-xs text-white/40 truncate mt-0.5">{link.url}</p>
                   </div>
                 </a>
               )
@@ -282,13 +283,7 @@ export function PublicProfile() {
           </div>
         )}
 
-        {links.length === 0 && (
-          <div className="rounded-2xl border border-white/08 p-8 text-center bg-white/04">
-            <p className="text-sm text-white/25">Aucun lien pour l'instant.</p>
-          </div>
-        )}
-
-        <p className="text-center text-[10px] font-semibold text-white/15 uppercase tracking-[0.28em] pt-2">
+        <p className="text-center text-[10px] font-semibold text-white/25 uppercase tracking-[0.28em] pt-4">
           propulsé par TAP
         </p>
       </div>
