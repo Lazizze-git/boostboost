@@ -182,7 +182,7 @@ export function PublicProfile() {
         className="absolute inset-0"
         style={{
           background: profile.avatar_url
-            ? 'linear-gradient(to bottom, transparent 30%, rgba(10,10,10,0.4) 60%, rgba(10,10,10,0.95) 100%)'
+            ? 'linear-gradient(to bottom, transparent 50%, rgba(10,10,10,0.2) 70%, rgba(10,10,10,0.9) 95%)'
             : 'linear-gradient(to bottom, transparent, #0A0A0A)',
         }}
       />
@@ -198,7 +198,7 @@ export function PublicProfile() {
       )}
 
       {/* ─── Content ─── */}
-      <div className="relative z-10 flex-1 flex flex-col justify-end px-5 pb-10 pt-32">
+      <div className="relative z-10 flex-1 flex flex-col justify-end px-5 pb-8 pt-16">
 
         {/* Name + username + bio */}
         <div className="space-y-4 mb-6 animate-slide-up">
