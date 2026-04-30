@@ -55,6 +55,13 @@ export function Settings({ profile, onUpdated }: SettingsProps) {
 
     setAvatarUploading(true)
     try {
+      if (avatarUrl) {
+        const oldFileName = avatarUrl.split('/').pop()
+        if (oldFileName) {
+          await supabase.storage.from('avatars').remove([oldFileName])
+        }
+      }
+
       const compressedFile = await imageCompression(file, {
         maxSizeMB: 1,
         maxWidthOrHeight: 800,
